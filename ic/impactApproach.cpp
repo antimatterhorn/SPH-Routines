@@ -3,9 +3,9 @@
 #include <fstream>
 #include <iomanip>
 
-//using std::cout;
-//using std::cin;
-//using std::endl;
+/* This code will solve for the initial separation required */
+/* to bring two bodies of masses m1,m2 to within a desired  */
+/* separation on the first approach.						*/
 
 using namespace std;
 
@@ -86,7 +86,7 @@ int main()
 		rmin = 50.0;
 		h = 0.5;
 	
-		do //Euler's Method
+		do //RK
 		{
 			//TE0 = KE+PE;
 			
