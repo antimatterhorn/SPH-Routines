@@ -75,6 +75,8 @@ int main()
 	double ke = 0;
 	double pe = 0;
 	double te = 0;
+	
+	int i,j;
 
 	char name [80];
 	printf("filename: ");
@@ -151,8 +153,11 @@ int main()
 	
 	//Msgf(("Data read, SPHnobj=%d, SPHgnobj=%d\n", nobj, gnobj));
 	//SDFout *outArray = malloc(sizeof(SDFout) * nobj);
-	int i;
-	for (i=0; i<nobj; i+=1) {
+
+	printf("display how many particles:");
+	scanf("%d",&j);
+	
+	for (i=0; i<j; i+=1) {
 		singlPrintf("x = %f\n", inArray[i].x);
 		singlPrintf("y = %f\n", inArray[i].y);
 		singlPrintf("z = %f\n", inArray[i].z);

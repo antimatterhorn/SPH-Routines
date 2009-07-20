@@ -56,7 +56,7 @@ typedef struct {
 	float gax, gay, gaz;  /* gravity acceleration of body */
 	float grav_mass;      /* gravitational mass of body */
 	float phi;            /* potential at body location */
-	float tacc;           /* time of last acceleration update of body */
+	//float tacc;           /* time of last acceleration update of body */
 	float idt;
 	unsigned int nbrs;     /* number of neighbors */
 	unsigned int ident;    /* unique identifier */
@@ -64,9 +64,6 @@ typedef struct {
 	//unsigned int useless;  /* to fill the double block (4int=1double)*/		
 } SPHbody;
 
-
-double pos1[3],pos2[3];
-float vel1[3],vel2[3];
 
 int main()
 {
@@ -84,16 +81,21 @@ int main()
 	double pe = 0;
 	double te = 0;
 	
+	double pos1[3],pos2[3];
+	float vel1[3],vel2[3];
+	double dummy1,dummy2,dummy3;
+	
 	SDF *sdfp;
+	SDF *sdfp2;
 	SPHbody *body1;
 	SPHbody *body2;
 	int gnobj1, nobj1;
 	int gnobj2, nobj2;
-	int conf;
+	int conf,i;
 	
 	char file1[80];
 	char file2[80];
-	char outfile[2] = "ic";
+	char outfile[80];
 	
 	printf("file1: ");
 	gets (file1);
@@ -102,16 +104,28 @@ int main()
 	gets (file2);
 	
 	printf("x1 y1 z1: ");
-	scanf("%f %f %f", &pos1[0], &pos1[1], &pos1[2]);
+	scanf("%lf %lf %lf", &dummy1, &dummy2, &dummy3);
+	pos1[0] = dummy1;
+	pos1[1] = dummy2;
+	pos1[2] = dummy3;
 	
 	printf("vx1 vy1 vz1: ");
-	scanf("%f %f %f", &vel1[0], &vel1[1], &vel1[2]);
+	scanf("%lf %lf %lf", &dummy1, &dummy2, &dummy3);
+	vel1[0] = dummy1;
+	vel1[1] = dummy2;
+	vel1[2] = dummy3;
 	
 	printf("x2 y2 z2: ");
-	scanf("%f %f %f", &pos2[0], &pos2[1], &pos2[2]);
+	scanf("%lf %lf %lf", &dummy1, &dummy2, &dummy3);	
+	pos2[0] = dummy1;
+	pos2[1] = dummy2;
+	pos2[2] = dummy3;
 	
 	printf("vx2 vy2 vz2: ");
-	scanf("%f %f %f", &vel2[0], &vel2[1], &vel2[2]);
+	scanf("%lf %lf %lf", &dummy1, &dummy2, &dummy3);	
+	vel2[0] = dummy1;
+	vel2[1] = dummy2;
+	vel2[2] = dummy3;
 	
 	//read first file
 	sdfp = SDFreadf(file1, (void **)&body1, &gnobj1, &nobj1, sizeof(SPHbody),
@@ -155,7 +169,7 @@ int main()
 					"gaz", offsetof(SPHbody, gaz), &conf,
 					"grav_mass", offsetof(SPHbody, grav_mass), &conf,
 					"phi", offsetof(SPHbody, phi), &conf,
-					"tacc", offsetof(SPHbody, tacc), &conf,
+					//"tacc", offsetof(SPHbody, tacc), &conf,
 					"idt", offsetof(SPHbody, idt), &conf,
 					"nbrs", offsetof(SPHbody, nbrs), &conf,
 					"ident", offsetof(SPHbody, ident), &conf,
@@ -177,7 +191,7 @@ int main()
 	SDFgetintOrDefault  (sdfp, "iter",  &iter, 0);
 	
 	//read second file
-	sdfp = SDFreadf(file2, (void **)&body2, &gnobj2, &nobj2, sizeof(SPHbody),
+	sdfp2 = SDFreadf(file2, (void **)&body2, &gnobj2, &nobj2, sizeof(SPHbody),
 					"x", offsetof(SPHbody, x), &conf,
 					"y", offsetof(SPHbody, y), &conf,
 					"z", offsetof(SPHbody, z), &conf,
@@ -218,7 +232,7 @@ int main()
 					"gaz", offsetof(SPHbody, gaz), &conf,
 					"grav_mass", offsetof(SPHbody, grav_mass), &conf,
 					"phi", offsetof(SPHbody, phi), &conf,
-					"tacc", offsetof(SPHbody, tacc), &conf,
+					//"tacc", offsetof(SPHbody, tacc), &conf,
 					"idt", offsetof(SPHbody, idt), &conf,
 					"nbrs", offsetof(SPHbody, nbrs), &conf,
 					"ident", offsetof(SPHbody, ident), &conf,
@@ -228,8 +242,8 @@ int main()
 	
 	//create and fill output structure
 	SPHbody *outbody = malloc(sizeof(SPHbody) * (nobj1+nobj2));
-	int i;
-	for (i=0; i<nobj1; i+=1) {
+
+	for (i=0; i<nobj1; i++) {
 		outbody[i].x = body1[i].x + pos1[0];
 		outbody[i].y = body1[i].y + pos1[1];
 		outbody[i].z = body1[i].z + pos1[2];
@@ -240,7 +254,7 @@ int main()
 		outbody[i].u = body1[i].u;
 		outbody[i].h = body1[i].h;
 		outbody[i].rho = body1[i].rho;
-		//outbody[i].pr = body1[i].pr;
+		outbody[i].pr = body1[i].pr;
 		outbody[i].drho_dt = body1[i].drho_dt;
 		outbody[i].udot = body1[i].udot;
 		outbody[i].temp = body1[i].temp;
@@ -273,60 +287,61 @@ int main()
 		//outbody[i].tacc = body1[i].tacc;
 		outbody[i].idt = body1[i].idt;
 		outbody[i].nbrs = body1[i].nbrs;
-		outbody[i].ident = body1[i].ident;
+		outbody[i].ident = i;
 		outbody[i].windid = body1[i].windid;
 		//outbody[i].useless = body1[i].useless;
 	}
-	for (i=nobj1; i<(nobj1+nobj2); i+=1) {
-		outbody[i].x = body2[i].x + pos2[0];
-		outbody[i].y = body2[i].y + pos2[1];
-		outbody[i].z = body2[i].z + pos2[2];
-		outbody[i].mass = body2[i].mass;
-		outbody[i].vx = body2[i].vx + vel2[0];
-		outbody[i].vy = body2[i].vy + vel2[1];
-		outbody[i].vz = body2[i].vz + vel2[2];
-		outbody[i].u = body2[i].u;
-		outbody[i].h = body2[i].h;
-		outbody[i].rho = body2[i].rho;
-		//outbody[i].pr = body2[i].pr;
-		outbody[i].drho_dt = body2[i].drho_dt;
-		outbody[i].udot = body2[i].udot;
-		outbody[i].temp = body2[i].temp;
-		//		outbody[i].He4 = body2[i].He4;
-		//		outbody[i].C12 = body2[i].C12;
-		//		outbody[i].O16 = body2[i].O16;
-		//		outbody[i].Ne20 = body2[i].Ne20;
-		//		outbody[i].Mg24 = body2[i].Mg24;
-		//		outbody[i].Si28 = body2[i].Si28;
-		//		outbody[i].S32 = body2[i].S32;
-		//		outbody[i].Ar36 = body2[i].Ar36;
-		//		outbody[i].Ca40 = body2[i].Ca40;
-		//		outbody[i].Ti44 = body2[i].Ti44;
-		//		outbody[i].Cr48 = body2[i].Cr48;
-		//		outbody[i].Fe52 = body2[i].Fe52;
-		//		outbody[i].Ni56 = body2[i].Ni56;
-		outbody[i].abar = body2[i].abar;
-		outbody[i].zbar = body2[i].zbar;
-		outbody[i].ax = body2[i].ax;
-		outbody[i].ay = body2[i].ay;
-		outbody[i].az = body2[i].az;
-		outbody[i].lax = body2[i].lax;
-		outbody[i].lay = body2[i].lay;
-		outbody[i].laz = body2[i].laz;
-		outbody[i].gax = body2[i].gax;
-		outbody[i].gay = body2[i].gay;
-		outbody[i].gaz = body2[i].gaz;
-		outbody[i].grav_mass = body2[i].grav_mass;
-		outbody[i].phi = body2[i].phi;
-		//outbody[i].tacc = body2[i].tacc;
-		outbody[i].idt = body2[i].idt;
-		outbody[i].nbrs = body2[i].nbrs;
-		outbody[i].ident = body2[i].ident + nobj1;
-		outbody[i].windid = body2[i].windid;
+	for (i=0; i<nobj2; i++) {
+		outbody[i+nobj1].x = body2[i].x + pos2[0];
+		outbody[i+nobj1].y = body2[i].y + pos2[1];
+		outbody[i+nobj1].z = body2[i].z + pos2[2];
+		outbody[i+nobj1].mass = body2[i].mass;
+		outbody[i+nobj1].vx = body2[i].vx + vel2[0];
+		outbody[i+nobj1].vy = body2[i].vy + vel2[1];
+		outbody[i+nobj1].vz = body2[i].vz + vel2[2];
+		outbody[i+nobj1].u = body2[i].u;
+		outbody[i+nobj1].h = body2[i].h;
+		outbody[i+nobj1].rho = body2[i].rho;
+		outbody[i+nobj1].pr = body2[i].pr;
+		outbody[i+nobj1].drho_dt = body2[i].drho_dt;
+		outbody[i+nobj1].udot = body2[i].udot;
+		outbody[i+nobj1].temp = body2[i].temp;
+		//		outbody[i+nobj1].He4 = body2[i].He4;
+		//		outbody[i+nobj1].C12 = body2[i].C12;
+		//		outbody[i+nobj1].O16 = body2[i].O16;
+		//		outbody[i+nobj1].Ne20 = body2[i].Ne20;
+		//		outbody[i+nobj1].Mg24 = body2[i].Mg24;
+		//		outbody[i+nobj1].Si28 = body2[i].Si28;
+		//		outbody[i+nobj1].S32 = body2[i].S32;
+		//		outbody[i+nobj1].Ar36 = body2[i].Ar36;
+		//		outbody[i+nobj1].Ca40 = body2[i].Ca40;
+		//		outbody[i+nobj1].Ti44 = body2[i].Ti44;
+		//		outbody[i+nobj1].Cr48 = body2[i].Cr48;
+		//		outbody[i+nobj1].Fe52 = body2[i].Fe52;
+		//		outbody[i+nobj1].Ni56 = body2[i].Ni56;
+		outbody[i+nobj1].abar = body2[i].abar;
+		outbody[i+nobj1].zbar = body2[i].zbar;
+		outbody[i+nobj1].ax = body2[i].ax;
+		outbody[i+nobj1].ay = body2[i].ay;
+		outbody[i+nobj1].az = body2[i].az;
+		outbody[i+nobj1].lax = body2[i].lax;
+		outbody[i+nobj1].lay = body2[i].lay;
+		outbody[i+nobj1].laz = body2[i].laz;
+		outbody[i+nobj1].gax = body2[i].gax;
+		outbody[i+nobj1].gay = body2[i].gay;
+		outbody[i+nobj1].gaz = body2[i].gaz;
+		outbody[i+nobj1].grav_mass = body2[i].grav_mass;
+		outbody[i+nobj1].phi = body2[i].phi;
+		//outbody[i+nobj1].tacc = body2[i].tacc;
+		outbody[i+nobj1].idt = body2[i].idt;
+		outbody[i+nobj1].nbrs = body2[i].nbrs;
+		outbody[i+nobj1].ident = i+nobj1;
+		outbody[i+nobj1].windid = body2[i].windid;
 		//outbody[i].useless = body1[i].useless;
 	}
 	
 	//write the output file
+	snprintf(outfile, sizeof(outfile), "ic_%s", file1);
 	SDFwrite(outfile, gnobj1+gnobj2, 
 			 nobj1+nobj2, outbody, sizeof(SPHbody),
 			 SPHOUTBODYDESC,
