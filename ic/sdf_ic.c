@@ -18,7 +18,6 @@
 	float u;			/* internal energy */\n\
 	float h;			/* smoothing length */\n\
 	float rho;			/* density */\n\
-	float pr;			/* pressure */\n\
 	float drho_dt;              /* time derivative of rho */\n\
 	float udot;			/* time derivative of u */\n\
 	float temp;           /* temperature of body */\n\
@@ -26,8 +25,6 @@
 	float zbar;           /* avg number of protons per particle of body */\n\
 	float ax, ay, az;		/* acceleration */\n\
 	float lax, lay, laz;	/* acceleration at tpos-dt */\n\
-	float gax, gay, gaz;  /* gravity acceleration of body */\n\
-	float grav_mass;      /* gravitational mass of body */\n\
 	float phi;			/* potential */\n\
 	float idt;			/* timestep */\n\
 	unsigned int nbrs;          /* number of neighbors */\n\
@@ -43,7 +40,7 @@ typedef struct {
 	float u;              /* specific energy of body*/
 	float h;              /* smoothing length of body */
 	float rho;            /* density of body */
-	float pr;            /* pressure of body */
+	//float pr;            /* pressure of body */
 	float drho_dt;        /* drho/dt of body */
 	float udot;           /* du/dt of body */
 	float temp;           /* temperature of body */
@@ -53,8 +50,8 @@ typedef struct {
 	float zbar;           /* avg number of protons per particle of body */
 	float ax, ay, az;     /* acceleration of body */
 	float lax, lay, laz;  /* last acceleration of body */
-	float gax, gay, gaz;  /* gravity acceleration of body */
-	float grav_mass;      /* gravitational mass of body */
+	//float gax, gay, gaz;  /* gravity acceleration of body */
+	//float grav_mass;      /* gravitational mass of body */
 	float phi;            /* potential at body location */
 	//float tacc;           /* time of last acceleration update of body */
 	float idt;
@@ -139,7 +136,7 @@ int main()
 					"u", offsetof(SPHbody, u), &conf,
 					"h", offsetof(SPHbody, h), &conf,
 					"rho", offsetof(SPHbody, rho), &conf,
-					"pr", offsetof(SPHbody, pr), &conf,
+					//"pr", offsetof(SPHbody, pr), &conf,
 					"drho_dt", offsetof(SPHbody, drho_dt), &conf,
 					"udot", offsetof(SPHbody, udot), &conf,
 					"temp", offsetof(SPHbody, temp), &conf,
@@ -164,10 +161,10 @@ int main()
 					"lax", offsetof(SPHbody, lax), &conf,
 					"lay", offsetof(SPHbody, lay), &conf,
 					"laz", offsetof(SPHbody, laz), &conf,
-					"gax", offsetof(SPHbody, gax), &conf,
-					"gay", offsetof(SPHbody, gay), &conf,
-					"gaz", offsetof(SPHbody, gaz), &conf,
-					"grav_mass", offsetof(SPHbody, grav_mass), &conf,
+					//"gax", offsetof(SPHbody, gax), &conf,
+					//"gay", offsetof(SPHbody, gay), &conf,
+					//"gaz", offsetof(SPHbody, gaz), &conf,
+					//"grav_mass", offsetof(SPHbody, grav_mass), &conf,
 					"phi", offsetof(SPHbody, phi), &conf,
 					//"tacc", offsetof(SPHbody, tacc), &conf,
 					"idt", offsetof(SPHbody, idt), &conf,
@@ -202,7 +199,7 @@ int main()
 					"u", offsetof(SPHbody, u), &conf,
 					"h", offsetof(SPHbody, h), &conf,
 					"rho", offsetof(SPHbody, rho), &conf,
-					"pr", offsetof(SPHbody, pr), &conf,
+					//"pr", offsetof(SPHbody, pr), &conf,
 					"drho_dt", offsetof(SPHbody, drho_dt), &conf,
 					"udot", offsetof(SPHbody, udot), &conf,
 					"temp", offsetof(SPHbody, temp), &conf,
@@ -227,10 +224,10 @@ int main()
 					"lax", offsetof(SPHbody, lax), &conf,
 					"lay", offsetof(SPHbody, lay), &conf,
 					"laz", offsetof(SPHbody, laz), &conf,
-					"gax", offsetof(SPHbody, gax), &conf,
-					"gay", offsetof(SPHbody, gay), &conf,
-					"gaz", offsetof(SPHbody, gaz), &conf,
-					"grav_mass", offsetof(SPHbody, grav_mass), &conf,
+					//"gax", offsetof(SPHbody, gax), &conf,
+					//"gay", offsetof(SPHbody, gay), &conf,
+					//"gaz", offsetof(SPHbody, gaz), &conf,
+					//"grav_mass", offsetof(SPHbody, grav_mass), &conf,
 					"phi", offsetof(SPHbody, phi), &conf,
 					//"tacc", offsetof(SPHbody, tacc), &conf,
 					"idt", offsetof(SPHbody, idt), &conf,
@@ -254,7 +251,7 @@ int main()
 		outbody[i].u = body1[i].u;
 		outbody[i].h = body1[i].h;
 		outbody[i].rho = body1[i].rho;
-		outbody[i].pr = body1[i].pr;
+		//outbody[i].pr = body1[i].pr;
 		outbody[i].drho_dt = body1[i].drho_dt;
 		outbody[i].udot = body1[i].udot;
 		outbody[i].temp = body1[i].temp;
@@ -279,10 +276,10 @@ int main()
 		outbody[i].lax = body1[i].lax;
 		outbody[i].lay = body1[i].lay;
 		outbody[i].laz = body1[i].laz;
-		outbody[i].gax = body1[i].gax;
-		outbody[i].gay = body1[i].gay;
-		outbody[i].gaz = body1[i].gaz;
-		outbody[i].grav_mass = body1[i].grav_mass;
+//		outbody[i].gax = body1[i].gax;
+//		outbody[i].gay = body1[i].gay;
+//		outbody[i].gaz = body1[i].gaz;
+		//outbody[i].grav_mass = body1[i].grav_mass;
 		outbody[i].phi = body1[i].phi;
 		//outbody[i].tacc = body1[i].tacc;
 		outbody[i].idt = body1[i].idt;
@@ -302,7 +299,7 @@ int main()
 		outbody[i+nobj1].u = body2[i].u;
 		outbody[i+nobj1].h = body2[i].h;
 		outbody[i+nobj1].rho = body2[i].rho;
-		outbody[i+nobj1].pr = body2[i].pr;
+		//outbody[i+nobj1].pr = body2[i].pr;
 		outbody[i+nobj1].drho_dt = body2[i].drho_dt;
 		outbody[i+nobj1].udot = body2[i].udot;
 		outbody[i+nobj1].temp = body2[i].temp;
@@ -327,10 +324,10 @@ int main()
 		outbody[i+nobj1].lax = body2[i].lax;
 		outbody[i+nobj1].lay = body2[i].lay;
 		outbody[i+nobj1].laz = body2[i].laz;
-		outbody[i+nobj1].gax = body2[i].gax;
-		outbody[i+nobj1].gay = body2[i].gay;
-		outbody[i+nobj1].gaz = body2[i].gaz;
-		outbody[i+nobj1].grav_mass = body2[i].grav_mass;
+//		outbody[i+nobj1].gax = body2[i].gax;
+//		outbody[i+nobj1].gay = body2[i].gay;
+//		outbody[i+nobj1].gaz = body2[i].gaz;
+		//outbody[i+nobj1].grav_mass = body2[i].grav_mass;
 		outbody[i+nobj1].phi = body2[i].phi;
 		//outbody[i+nobj1].tacc = body2[i].tacc;
 		outbody[i+nobj1].idt = body2[i].idt;

@@ -78,8 +78,8 @@ int main()
 					"h", offsetof(SPHbody, h), &conf,
 					"rho", offsetof(SPHbody, rho), &conf,
 					"pr", offsetof(SPHbody, pr), &conf,
-					"drho_dt", offsetof(SPHbody, drho_dt), &conf,
-					"udot", offsetof(SPHbody, udot), &conf,
+//					"drho_dt", offsetof(SPHbody, drho_dt), &conf,
+//					"udot", offsetof(SPHbody, udot), &conf,
 					"temp", offsetof(SPHbody, temp), &conf,
 					"He4", offsetof(SPHbody, He4), &conf,
 					"C12", offsetof(SPHbody, C12), &conf,
@@ -94,24 +94,24 @@ int main()
 					"Cr48", offsetof(SPHbody, Cr48), &conf,
 					"Fe52", offsetof(SPHbody, Fe52), &conf,
 					"Ni56", offsetof(SPHbody, Ni56), &conf,
-					"abar", offsetof(SPHbody, abar), &conf,
-					"zbar", offsetof(SPHbody, zbar), &conf,
-					"ax", offsetof(SPHbody, ax), &conf,
-					"ay", offsetof(SPHbody, ay), &conf,
-					"az", offsetof(SPHbody, az), &conf,
-					"lax", offsetof(SPHbody, lax), &conf,
-					"lay", offsetof(SPHbody, lay), &conf,
-					"laz", offsetof(SPHbody, laz), &conf,
-					"gax", offsetof(SPHbody, gax), &conf,
-					"gay", offsetof(SPHbody, gay), &conf,
-					"gaz", offsetof(SPHbody, gaz), &conf,
-					//"grav_mass", offsetof(SPHbody, grav_mass), &conf,
-					"phi", offsetof(SPHbody, phi), &conf,
-					"tacc", offsetof(SPHbody, tacc), &conf,
-					"idt", offsetof(SPHbody, idt), &conf,
-					"nbrs", offsetof(SPHbody, nbrs), &conf,
-					"ident", offsetof(SPHbody, ident), &conf,
-					"windid", offsetof(SPHbody, windid), &conf,
+//					"abar", offsetof(SPHbody, abar), &conf,
+//					"zbar", offsetof(SPHbody, zbar), &conf,
+//					"ax", offsetof(SPHbody, ax), &conf,
+//					"ay", offsetof(SPHbody, ay), &conf,
+//					"az", offsetof(SPHbody, az), &conf,
+//					"lax", offsetof(SPHbody, lax), &conf,
+//					"lay", offsetof(SPHbody, lay), &conf,
+//					"laz", offsetof(SPHbody, laz), &conf,
+//					"gax", offsetof(SPHbody, gax), &conf,
+//					"gay", offsetof(SPHbody, gay), &conf,
+//					"gaz", offsetof(SPHbody, gaz), &conf,
+//					"grav_mass", offsetof(SPHbody, grav_mass), &conf,
+//					"phi", offsetof(SPHbody, phi), &conf,
+//					"tacc", offsetof(SPHbody, tacc), &conf,
+//					"idt", offsetof(SPHbody, idt), &conf,
+//					"nbrs", offsetof(SPHbody, nbrs), &conf,
+//					"ident", offsetof(SPHbody, ident), &conf,
+//					"windid", offsetof(SPHbody, windid), &conf,
 					//"useless", offsetof(SPHbody, useless), &conf,
 					NULL);
 	
@@ -148,62 +148,64 @@ int main()
 	
 	SPHbody *p;
 	
+	printf("Anchoring to grid...\n");
+	
 	for(p = body; p < body+gnobj; p++)
 	{
-		singlPrintf("%d / %d\n",p->ident,gnobj-1);
+		//singlPrintf("%d / %d\n",p->ident,gnobj-1);
 		//cout << p << "/" << npart-1 << endl;
-			
-			x = p->x;
-			y = p->y;
-			z = p->z;
-			h = p->h;
-			rho = p->rho;
-			temp = p->temp;
-			mass = p->mass;
-			
-			x2i();
-			y2j();
-			z2k();
+		
+		x = p->x;
+		y = p->y;
+		z = p->z;
+		h = p->h;
+		rho = p->rho;
+		temp = p->temp;
+		mass = p->mass;
+		
+		x2i();
+		y2j();
+		z2k();
 
-			r = h*(pixels/(2.0*xmax));
-			
-			if (r==0)
+		r = h*(pixels/(2.0*xmax));
+		
+		if (r==0)
+		{
+			//printf("found that r was too small, filling only 1 block\n");
+			if (ic >= 0 && ic < pixels && jc >= 0 && jc < pixels && kc >= 0 && kc < pixels)
 			{
-				printf("found that r was too small, filling only 1 block\n");
-				if (ic >= 0 && ic < pixels && jc >= 0 && jc < pixels && kc >= 0 && kc < pixels)
-				{
-					ind = ic*pixels*pixels + jc*pixels + kc;
-					outArray[ind][5] += rho;
-					outArray[ind][4] += temp*rho;
-					outArray[ind][3] += rho*rho;
-				}
-				
+				ind = ic*pixels*pixels + jc*pixels + kc;
+				outArray[ind][5] += rho;
+				outArray[ind][4] += temp*rho;
+				outArray[ind][3] += rho*rho;
 			}
-			else
+			
+		}
+		else
+		{
+			for(imi = ic-2*r; imi < ic+2*r+1; imi++)
 			{
-				for(imi = ic-2*r; imi < ic+2*r+1; imi++)
+				for(imj = jc-2*r; imj < jc+2*r+1; imj++)
 				{
-					for(imj = jc-2*r; imj < jc+2*r+1; imj++)
-					{
-						for (imk = kc-2*r; imk < kc+2*r+1; imk++) {
-							if (imi >= 0 && imi < pixels && imj >= 0 && imj < pixels && imk >= 0 && imk < pixels) // inside the image
-							{
-								rr = sqrt(pow((imi-ic),2.0)+pow((imj-jc),2.0)+pow((imk-kc),2.0));
-								if (rr <= 2*r) // inside the circle
-								{							
-									ind = imi*pixels*pixels + imj*pixels + imk;
-									outArray[ind][5] += rho;
-									outArray[ind][4] += temp*rho*w(h,2*rr*(double)xmax/(double)pixels)*pi*pow(h,3.0);
-									outArray[ind][3] += rho*rho*w(h,2*rr*(double)xmax/(double)pixels)*pi*pow(h,3.0);
-								}
+					for (imk = kc-2*r; imk < kc+2*r+1; imk++) {
+						if (imi >= 0 && imi < pixels && imj >= 0 && imj < pixels && imk >= 0 && imk < pixels) // inside the image
+						{
+							rr = sqrt(pow((imi-ic),2.0)+pow((imj-jc),2.0)+pow((imk-kc),2.0));
+							if (rr <= 2*r) // inside the circle
+							{							
+								ind = imi*pixels*pixels + imj*pixels + imk;
+								outArray[ind][5] += rho;
+								outArray[ind][4] += temp*rho*w(h,2*rr*(double)xmax/(double)pixels)*pi*pow(h,3.0);
+								outArray[ind][3] += rho*rho*w(h,2*rr*(double)xmax/(double)pixels)*pi*pow(h,3.0);
 							}
-							
 						}
 					}
-				}	
-			}
-		
+				}
+			}	
+		}
 	}
+	
+	printf("Writing to file...\n");
 	
 	//open the stream file
 	snprintf(csvfile, sizeof(csvfile), "%s.cube", sdffile);
@@ -219,7 +221,7 @@ int main()
 										(double)outArray[i][4]/(double)outArray[i][5]);
 		}
 		else {
-			fprintf(stream,"%f %f %f %g %g\n",outArray[i][0],outArray[i][1],outArray[i][2],0,0);
+			fprintf(stream,"%f %f %f %d %d\n",outArray[i][0],outArray[i][1],outArray[i][2],0,0);
 		}
 	}
 

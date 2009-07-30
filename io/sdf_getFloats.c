@@ -39,7 +39,7 @@ typedef struct {
 	float u;              /* specific energy of body*/
 	float h;              /* smoothing length of body */
 	float rho;            /* density of body */
-	float pr;            /* pressure of body */
+	//float pr;            /* pressure of body */
 	float drho_dt;        /* drho/dt of body */
 	float udot;           /* du/dt of body */
 	float temp;           /* temperature of body */
@@ -49,8 +49,8 @@ typedef struct {
 	float zbar;           /* avg number of protons per particle of body */
 	float ax, ay, az;     /* acceleration of body */
 	float lax, lay, laz;  /* last acceleration of body */
-	float gax, gay, gaz;  /* gravity acceleration of body */
-	float grav_mass;      /* gravitational mass of body */
+	//float gax, gay, gaz;  /* gravity acceleration of body */
+	//float grav_mass;      /* gravitational mass of body */
 	float phi;            /* potential at body location */
 	float tacc;           /* time of last acceleration update of body */
 	float idt;
@@ -98,7 +98,7 @@ int main()
 					"u", offsetof(SPHbody, u), &conf,
 					"h", offsetof(SPHbody, h), &conf,
 					"rho", offsetof(SPHbody, rho), &conf,
-					"pr", offsetof(SPHbody, pr), &conf,
+					//"pr", offsetof(SPHbody, pr), &conf,
 					"drho_dt", offsetof(SPHbody, drho_dt), &conf,
 					"udot", offsetof(SPHbody, udot), &conf,
 					"temp", offsetof(SPHbody, temp), &conf,
@@ -123,10 +123,10 @@ int main()
 					"lax", offsetof(SPHbody, lax), &conf,
 					"lay", offsetof(SPHbody, lay), &conf,
 					"laz", offsetof(SPHbody, laz), &conf,
-					"gax", offsetof(SPHbody, gax), &conf,
-					"gay", offsetof(SPHbody, gay), &conf,
-					"gaz", offsetof(SPHbody, gaz), &conf,
-					"grav_mass", offsetof(SPHbody, grav_mass), &conf,
+//					"gax", offsetof(SPHbody, gax), &conf,
+//					"gay", offsetof(SPHbody, gay), &conf,
+//					"gaz", offsetof(SPHbody, gaz), &conf,
+//					"grav_mass", offsetof(SPHbody, grav_mass), &conf,
 					"phi", offsetof(SPHbody, phi), &conf,
 					"tacc", offsetof(SPHbody, tacc), &conf,
 					"idt", offsetof(SPHbody, idt), &conf,
@@ -168,7 +168,7 @@ int main()
 		singlPrintf("u = %f\n", inArray[i].u);
 		singlPrintf("h = %f\n", inArray[i].h);
 		singlPrintf("rho = %f\n", inArray[i].rho);
-		singlPrintf("pr = %f\n", inArray[i].pr);
+//		singlPrintf("pr = %f\n", inArray[i].pr);
 		singlPrintf("drho_dt = %f\n", inArray[i].drho_dt);
 		singlPrintf("udot = %f\n", inArray[i].udot);
 		singlPrintf("temp = %f\n", inArray[i].temp);
@@ -180,10 +180,10 @@ int main()
 		singlPrintf("lax = %f\n", inArray[i].lax);
 		singlPrintf("lay = %f\n", inArray[i].lay);
 		singlPrintf("laz = %f\n", inArray[i].laz);
-		singlPrintf("gax = %f\n", inArray[i].gax);
-		singlPrintf("gay = %f\n", inArray[i].gay);
-		singlPrintf("gaz = %f\n", inArray[i].gaz);
-		singlPrintf("grav_mass = %f\n", inArray[i].grav_mass);
+//		singlPrintf("gax = %f\n", inArray[i].gax);
+//		singlPrintf("gay = %f\n", inArray[i].gay);
+//		singlPrintf("gaz = %f\n", inArray[i].gaz);
+//		singlPrintf("grav_mass = %f\n", inArray[i].grav_mass);
 		singlPrintf("phi = %f\n", inArray[i].phi);
 		singlPrintf("tacc = %f\n", inArray[i].tacc);
 		singlPrintf("idt = %f\n", inArray[i].idt);	
