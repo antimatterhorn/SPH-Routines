@@ -18,9 +18,13 @@
 	float u;			/* internal energy */\n\
 	float h;			/* smoothing length */\n\
 	float rho;			/* density */\n\
+	float pr;			/* pressure */\n\
 	float drho_dt;              /* time derivative of rho */\n\
 	float udot;			/* time derivative of u */\n\
 	float temp;           /* temperature of body */\n\
+	float He4, C12, O16, Ne20, Mg24, Si28, S32; /* abundances of body */\n\
+	float Ar36, Ca40, Ti44, Cr48, Fe52, Ni56; /* abundances of body */\n\
+	float vsound;		/* sound speed */\n\
 	float abar;           /* avg number of nucleons per particle of body */\n\
 	float zbar;           /* avg number of protons per particle of body */\n\
 	float ax, ay, az;		/* acceleration */\n\
@@ -40,12 +44,13 @@ typedef struct {
 	float u;              /* specific energy of body*/
 	float h;              /* smoothing length of body */
 	float rho;            /* density of body */
-	//float pr;            /* pressure of body */
+	float pr;            /* pressure of body */
 	float drho_dt;        /* drho/dt of body */
 	float udot;           /* du/dt of body */
 	float temp;           /* temperature of body */
-	//float He4, C12, O16, Ne20, Mg24, Si28, S32; /* abundances of body */
-	//float Ar36, Ca40, Ti44, Cr48, Fe52, Ni56; /* abundances of body */
+	float He4, C12, O16, Ne20, Mg24, Si28, S32; /* abundances of body */
+	float Ar36, Ca40, Ti44, Cr48, Fe52, Ni56; /* abundances of body */
+	float vsound;			/* sound speed */
 	float abar;           /* avg number of nucleons per particle of body */
 	float zbar;           /* avg number of protons per particle of body */
 	float ax, ay, az;     /* acceleration of body */
@@ -136,23 +141,24 @@ int main()
 					"u", offsetof(SPHbody, u), &conf,
 					"h", offsetof(SPHbody, h), &conf,
 					"rho", offsetof(SPHbody, rho), &conf,
-					//"pr", offsetof(SPHbody, pr), &conf,
+					"pr", offsetof(SPHbody, pr), &conf,
 					"drho_dt", offsetof(SPHbody, drho_dt), &conf,
 					"udot", offsetof(SPHbody, udot), &conf,
 					"temp", offsetof(SPHbody, temp), &conf,
-					//"He4", offsetof(SPHbody, He4), &conf,
-					//"C12", offsetof(SPHbody, C12), &conf,
-					//"O16", offsetof(SPHbody, O16), &conf,
-					//					"Ne20", offsetof(SPHbody, Ne20), &conf,
-					//					"Mg24", offsetof(SPHbody, Mg24), &conf,
-					//					"Si28", offsetof(SPHbody, Si28), &conf,
-					//					"S32", offsetof(SPHbody, S32), &conf,
-					//					"Ar36", offsetof(SPHbody, Ar36), &conf,
-					//					"Ca40", offsetof(SPHbody, Ca40), &conf,
-					//					"Ti44", offsetof(SPHbody, Ti44), &conf,
-					//					"Cr48", offsetof(SPHbody, Cr48), &conf,
-					//					"Fe52", offsetof(SPHbody, Fe52), &conf,
-					//					"Ni56", offsetof(SPHbody, Ni56), &conf,
+					"He4", offsetof(SPHbody, He4), &conf,
+					"C12", offsetof(SPHbody, C12), &conf,
+					"O16", offsetof(SPHbody, O16), &conf,
+					"Ne20", offsetof(SPHbody, Ne20), &conf,
+					"Mg24", offsetof(SPHbody, Mg24), &conf,
+					"Si28", offsetof(SPHbody, Si28), &conf,
+					"S32", offsetof(SPHbody, S32), &conf,
+					"Ar36", offsetof(SPHbody, Ar36), &conf,
+					"Ca40", offsetof(SPHbody, Ca40), &conf,
+					"Ti44", offsetof(SPHbody, Ti44), &conf,
+					"Cr48", offsetof(SPHbody, Cr48), &conf,
+					"Fe52", offsetof(SPHbody, Fe52), &conf,
+					"Ni56", offsetof(SPHbody, Ni56), &conf,
+					"vsound", offsetof(SPHbody, vsound), &conf,
 					"abar", offsetof(SPHbody, abar), &conf,
 					"zbar", offsetof(SPHbody, zbar), &conf,
 					"ax", offsetof(SPHbody, ax), &conf,
@@ -179,13 +185,13 @@ int main()
 	SDFgetfloatOrDefault(sdfp, "Gnewt",  &Gnewt, (float)0.0);
 	SDFgetfloatOrDefault(sdfp, "tolerance",  &tolerance, (float)0.0);
 	SDFgetfloatOrDefault(sdfp, "frac_tolerance",  &frac_tolerance, (float)0.0);
-	SDFgetfloatOrDefault(sdfp, "tpos",  &tpos, (float)0.0);
+	//SDFgetfloatOrDefault(sdfp, "tpos",  &tpos, (float)0.0);
 	SDFgetfloatOrDefault(sdfp, "tvel",  &tvel, (float)0.0);
 	SDFgetfloatOrDefault(sdfp, "gamma",  &gamma, (float)0.0);
 	SDFgetdoubleOrDefault(sdfp, "ke",  &ke, (float)0.0);
 	SDFgetdoubleOrDefault(sdfp, "pe",  &pe, (float)0.0);
 	SDFgetdoubleOrDefault(sdfp, "te",  &te, (float)0.0);
-	SDFgetintOrDefault  (sdfp, "iter",  &iter, 0);
+	//SDFgetintOrDefault  (sdfp, "iter",  &iter, 0);
 	
 	//read second file
 	sdfp2 = SDFreadf(file2, (void **)&body2, &gnobj2, &nobj2, sizeof(SPHbody),
@@ -199,23 +205,24 @@ int main()
 					"u", offsetof(SPHbody, u), &conf,
 					"h", offsetof(SPHbody, h), &conf,
 					"rho", offsetof(SPHbody, rho), &conf,
-					//"pr", offsetof(SPHbody, pr), &conf,
+					"pr", offsetof(SPHbody, pr), &conf,
 					"drho_dt", offsetof(SPHbody, drho_dt), &conf,
 					"udot", offsetof(SPHbody, udot), &conf,
 					"temp", offsetof(SPHbody, temp), &conf,
-					//"He4", offsetof(SPHbody, He4), &conf,
-					//"C12", offsetof(SPHbody, C12), &conf,
-					//"O16", offsetof(SPHbody, O16), &conf,
-					//					"Ne20", offsetof(SPHbody, Ne20), &conf,
-					//					"Mg24", offsetof(SPHbody, Mg24), &conf,
-					//					"Si28", offsetof(SPHbody, Si28), &conf,
-					//					"S32", offsetof(SPHbody, S32), &conf,
-					//					"Ar36", offsetof(SPHbody, Ar36), &conf,
-					//					"Ca40", offsetof(SPHbody, Ca40), &conf,
-					//					"Ti44", offsetof(SPHbody, Ti44), &conf,
-					//					"Cr48", offsetof(SPHbody, Cr48), &conf,
-					//					"Fe52", offsetof(SPHbody, Fe52), &conf,
-					//					"Ni56", offsetof(SPHbody, Ni56), &conf,
+					"He4", offsetof(SPHbody, He4), &conf,
+					"C12", offsetof(SPHbody, C12), &conf,
+					"O16", offsetof(SPHbody, O16), &conf,
+					"Ne20", offsetof(SPHbody, Ne20), &conf,
+					"Mg24", offsetof(SPHbody, Mg24), &conf,
+					"Si28", offsetof(SPHbody, Si28), &conf,
+					"S32", offsetof(SPHbody, S32), &conf,
+					"Ar36", offsetof(SPHbody, Ar36), &conf,
+					"Ca40", offsetof(SPHbody, Ca40), &conf,
+					"Ti44", offsetof(SPHbody, Ti44), &conf,
+					"Cr48", offsetof(SPHbody, Cr48), &conf,
+					"Fe52", offsetof(SPHbody, Fe52), &conf,
+					"Ni56", offsetof(SPHbody, Ni56), &conf,
+					"vsound", offsetof(SPHbody, vsound), &conf,
 					"abar", offsetof(SPHbody, abar), &conf,
 					"zbar", offsetof(SPHbody, zbar), &conf,
 					"ax", offsetof(SPHbody, ax), &conf,
@@ -251,23 +258,24 @@ int main()
 		outbody[i].u = body1[i].u;
 		outbody[i].h = body1[i].h;
 		outbody[i].rho = body1[i].rho;
-		//outbody[i].pr = body1[i].pr;
+		outbody[i].pr = body1[i].pr;
 		outbody[i].drho_dt = body1[i].drho_dt;
 		outbody[i].udot = body1[i].udot;
 		outbody[i].temp = body1[i].temp;
-		//		outbody[i].He4 = body1[i].He4;
-		//		outbody[i].C12 = body1[i].C12;
-		//		outbody[i].O16 = body1[i].O16;
-		//		outbody[i].Ne20 = body1[i].Ne20;
-		//		outbody[i].Mg24 = body1[i].Mg24;
-		//		outbody[i].Si28 = body1[i].Si28;
-		//		outbody[i].S32 = body1[i].S32;
-		//		outbody[i].Ar36 = body1[i].Ar36;
-		//		outbody[i].Ca40 = body1[i].Ca40;
-		//		outbody[i].Ti44 = body1[i].Ti44;
-		//		outbody[i].Cr48 = body1[i].Cr48;
-		//		outbody[i].Fe52 = body1[i].Fe52;
-		//		outbody[i].Ni56 = body1[i].Ni56;
+		outbody[i].He4 = body1[i].He4;
+		outbody[i].C12 = body1[i].C12;
+		outbody[i].O16 = body1[i].O16;
+		outbody[i].Ne20 = body1[i].Ne20;
+		outbody[i].Mg24 = body1[i].Mg24;
+		outbody[i].Si28 = body1[i].Si28;
+		outbody[i].S32 = body1[i].S32;
+		outbody[i].Ar36 = body1[i].Ar36;
+		outbody[i].Ca40 = body1[i].Ca40;
+		outbody[i].Ti44 = body1[i].Ti44;
+		outbody[i].Cr48 = body1[i].Cr48;
+		outbody[i].Fe52 = body1[i].Fe52;
+		outbody[i].Ni56 = body1[i].Ni56;
+		outbody[i].vsound = body1[i].vsound;
 		outbody[i].abar = body1[i].abar;
 		outbody[i].zbar = body1[i].zbar;
 		outbody[i].ax = body1[i].ax;
@@ -299,23 +307,24 @@ int main()
 		outbody[i+nobj1].u = body2[i].u;
 		outbody[i+nobj1].h = body2[i].h;
 		outbody[i+nobj1].rho = body2[i].rho;
-		//outbody[i+nobj1].pr = body2[i].pr;
+		outbody[i+nobj1].pr = body2[i].pr;
 		outbody[i+nobj1].drho_dt = body2[i].drho_dt;
 		outbody[i+nobj1].udot = body2[i].udot;
 		outbody[i+nobj1].temp = body2[i].temp;
-		//		outbody[i+nobj1].He4 = body2[i].He4;
-		//		outbody[i+nobj1].C12 = body2[i].C12;
-		//		outbody[i+nobj1].O16 = body2[i].O16;
-		//		outbody[i+nobj1].Ne20 = body2[i].Ne20;
-		//		outbody[i+nobj1].Mg24 = body2[i].Mg24;
-		//		outbody[i+nobj1].Si28 = body2[i].Si28;
-		//		outbody[i+nobj1].S32 = body2[i].S32;
-		//		outbody[i+nobj1].Ar36 = body2[i].Ar36;
-		//		outbody[i+nobj1].Ca40 = body2[i].Ca40;
-		//		outbody[i+nobj1].Ti44 = body2[i].Ti44;
-		//		outbody[i+nobj1].Cr48 = body2[i].Cr48;
-		//		outbody[i+nobj1].Fe52 = body2[i].Fe52;
-		//		outbody[i+nobj1].Ni56 = body2[i].Ni56;
+		outbody[i+nobj1].He4 = body2[i].He4;
+		outbody[i+nobj1].C12 = body2[i].C12;
+		outbody[i+nobj1].O16 = body2[i].O16;
+		outbody[i+nobj1].Ne20 = body2[i].Ne20;
+		outbody[i+nobj1].Mg24 = body2[i].Mg24;
+		outbody[i+nobj1].Si28 = body2[i].Si28;
+		outbody[i+nobj1].S32 = body2[i].S32;
+		outbody[i+nobj1].Ar36 = body2[i].Ar36;
+		outbody[i+nobj1].Ca40 = body2[i].Ca40;
+		outbody[i+nobj1].Ti44 = body2[i].Ti44;
+		outbody[i+nobj1].Cr48 = body2[i].Cr48;
+		outbody[i+nobj1].Fe52 = body2[i].Fe52;
+		outbody[i+nobj1].Ni56 = body2[i].Ni56;
+		outbody[i+nobj1].vsound = body2[i].vsound;
 		outbody[i+nobj1].abar = body2[i].abar;
 		outbody[i+nobj1].zbar = body2[i].zbar;
 		outbody[i+nobj1].ax = body2[i].ax;
@@ -339,6 +348,8 @@ int main()
 	
 	//write the output file
 	snprintf(outfile, sizeof(outfile), "ic_%s", file1);
+	//*fp = fopen(outfile, "w");
+	
 	SDFwrite(outfile, gnobj1+gnobj2, 
 			 nobj1+nobj2, outbody, sizeof(SPHbody),
 			 SPHOUTBODYDESC,

@@ -27,7 +27,7 @@ double h = 0.5;
 double k1,k2,k3,k4,KE,PE,TE0,TE1;
 double ca = 0.005;
 double rmin = 50.0;
-double c1 = (0.001 - 0.5) / 9.0;
+double c1 = (0.001 - 0.5) / -10.0;
 double c2 = 0.5 - 10.0*c1;
 
 

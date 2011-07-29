@@ -1,0 +1,7 @@
+! for communicating the thermodynamic state
+! btemp     = temperature
+! bden      = density
+! bpres     = constant pressure, for isobaric burns
+
+      double precision btemp,bden,bpres
+      common /brnfxt1/ btemp,bden,bpres

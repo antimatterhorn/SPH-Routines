@@ -19,7 +19,7 @@
 int gnobj, nobj;
 int conf;
 float xmax,ymax,zmax,x,y,z,rr;
-float rho,temp,mass,h;
+float rho,temp,mass,h,tpos;
 int choice,pixels;
 int i,j,k,imi,imj,imk,ic,jc,kc,r,ind;
 char sdffile[80];
@@ -58,15 +58,17 @@ double w(double hi, double ri)
 	}
 }
 
-int main()
+int main(int argc, char **argv[])
 {
 	SDF *sdfp;
 	SPHbody *body;
 	
-	printf("SDF file: ");
-	gets (sdffile);
+	if (argc < 2){
+		printf("SDF file: ");
+		gets (argv[1]);
+	}
 		
-	sdfp = SDFreadf(sdffile, (void **)&body, &gnobj, &nobj, sizeof(SPHbody),
+	sdfp = SDFreadf(argv[1], (void **)&body, &gnobj, &nobj, sizeof(SPHbody),
 					"x", offsetof(SPHbody, x), &conf,
 					"y", offsetof(SPHbody, y), &conf,
 					"z", offsetof(SPHbody, z), &conf,
@@ -115,13 +117,26 @@ int main()
 					//"useless", offsetof(SPHbody, useless), &conf,
 					NULL);
 	
-	singlPrintf("%s has %d particles.\n", sdffile, gnobj);
+	SDFgetfloatOrDefault(sdfp, "tpos",  &tpos, (float)0.0);
 	
-	printf("Blocks on a side:");
-	scanf("%d", &pixels);
+	singlPrintf("%s has %d particles.\n", argv[1], gnobj);
 	
-	printf("xmax:");
-	scanf("%f", &xmax);
+	if (argc < 3){
+		printf("Blocks on a side:");
+		scanf("%d", &pixels);
+	}
+	else {
+		pixels = atoi(argv[2]);
+	}
+	
+	if (argc < 4){
+		printf("xmax:");
+		scanf("%f", &xmax);
+	}
+	else {
+		xmax = atof(argv[3]);
+	}
+
 	ymax = zmax = xmax;
 	
 	double **outArray;
@@ -208,7 +223,7 @@ int main()
 	printf("Writing to file...\n");
 	
 	//open the stream file
-	snprintf(csvfile, sizeof(csvfile), "%s.cube", sdffile);
+	snprintf(csvfile, sizeof(csvfile), "%f.cube", tpos);
 	FILE *stream, *fopen();
 	/* declare a stream and prototype fopen */ 
 	
@@ -227,6 +242,7 @@ int main()
 
 	//close the stream file
 	fclose(stream);
+	free(outArray);
 	
 	return 0;
 }

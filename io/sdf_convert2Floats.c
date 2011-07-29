@@ -89,7 +89,7 @@ typedef struct {
 	//unsigned int useless;  /* to fill the double block (4int=1double)*/		
 } SDFout;
 
-int main()
+int main(int argc, char **argv[])
 {
 	int iter = 0;
 	float dt = 0;
@@ -106,15 +106,19 @@ int main()
 	double te = 0;
 
 	char name [80];
-	printf("filename: ");
-	gets (name);
-	singlPrintf("Reading \"%s\"\n", name);
+	
+	if (argc < 2){
+		printf("SDF file: ");
+		gets (argv[1]);
+	}
+
+	singlPrintf("Reading \"%s\"\n", argv[1]);
 
 	SDF *sdfp;
 	SDFin *inArray;
 	int gnobj, nobj;
 	int conf;
-	sdfp = SDFreadf(name, (void **)&inArray, &gnobj, &nobj, sizeof(SDFin),
+	sdfp = SDFreadf(argv[1], (void **)&inArray, &gnobj, &nobj, sizeof(SDFin),
 					"x", offsetof(SDFin, x), &conf,
 					"y", offsetof(SDFin, y), &conf,
 					"z", offsetof(SDFin, z), &conf,
@@ -230,7 +234,7 @@ int main()
 		//outArray[i].useless = inArray[i].useless;
 	}
 	char outname [80];
-	snprintf(outname, sizeof(outname), "%s.out", name);
+	snprintf(outname, sizeof(outname), "%s.out", argv[1]);
 	SDFwrite(outname, gnobj, 
 			 nobj, outArray, sizeof(SDFout),
 			 SPHOUTBODYDESC,

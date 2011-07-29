@@ -1,0 +1,9 @@
+!
+! declarations fro the dense matrix
+
+      integer          iodemax
+      parameter        (iodemax = 20)
+      double precision dens_dfdy(iodemax,iodemax), &
+                       dmat(iodemax,iodemax)
+!
+      common /dnmtx/   dens_dfdy,dmat

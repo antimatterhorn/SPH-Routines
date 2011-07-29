@@ -9,7 +9,7 @@
 using namespace std;
 
 const double pi = 3.1415926;
-const double G = 3.93935e-7; //in SPH code units
+const double G = 3.93935e-7; //in solar units Rsun,Msun,s
 
 const double onethird = 1.0 / 3.0;
 const double twothirds = 2.0 / 3.0;
@@ -18,14 +18,15 @@ const double onesixth = 1.0 / 6.0;
 
 double b = 1.0; //Rsun
 double m1,m2;
-double r12;
+double r12,rf;
 double r1[2],r2[2];
 double v1[2],v2[2];
 double v = 50.0;
 double h = 0.5;
 double k1,k2,k3,k4,KE,PE,TE0,TE1;
 double cm[2];
-double c1 = (0.001 - 0.5) / 9.0;
+double cv[2];
+double c1 = (0.001 - 0.5) / -10.0;
 double c2 = 0.5 - 10.0*c1;
 
 double a10(double dr)
@@ -57,6 +58,9 @@ int main()
 	
 	cout << "Velocity (km/s): ";
 	cin >> v;
+	
+	cout << "Final Separation (Rsun): ";
+	cin >> rf;
 	
 	r1[0] = 0;
 	r1[1] = 0;
@@ -142,13 +146,13 @@ int main()
 		{
 			pout << r1[0] << "," << r1[1] << "," 
 			<< r2[0] << "," << r2[1] << endl;
-			eout << i << "," << TE1 << endl;
+			eout << t << "," << TE1 << endl;
 		}
 		
 		h = c1*fabs(r2[0]-r1[0]) +c2;
 				
 	//} while (t<pow(10,6.0));
-	} while (r12 > 1.0);
+	} while (r12 > rf); //1/10th solar radius
 
 	pout.close();
 	eout.close();
@@ -161,10 +165,17 @@ int main()
 	r1[0] -= cm[0];
 	r1[1] -= cm[1];
 	
-	cout << "x1=" << r1[0] << "\ty1=" << r1[1] << 
-	"\tv1x=" << v1[0] << "\tv1y=" << v1[1] << endl;
-	cout << "x2=" << r2[0] << "\ty2=" << r2[1] << 
-	"\tv2x=" << v2[0] << "\tv2y=" << v2[1] << endl;
+	cv[0] = (m1*v1[0]+m2*v2[0])/(m1+m2);
+	cv[1] = (m1*v1[1]+m2*v2[1])/(m1+m2);
+	v1[0] -= cv[0];
+	v2[0] -= cv[0];
+	v1[1] -= cv[1];
+	v2[1] -= cv[1];
+	
+	cout << m1 << ":\tx1=" << r1[0]/.001 << "\ty1=" << r1[1]/.001 << 
+	"\tv1x=" << v1[0]/.001 << "\tv1y=" << v1[1]/.001 << endl;
+	cout << m2 << ":\tx2=" << r2[0]/.001 << "\ty2=" << r2[1]/.001 << 
+	"\tv2x=" << v2[0]/.001 << "\tv2y=" << v2[1]/.001 << endl;
 	
 	cout << "E = " << TE1 << endl;
 	

@@ -1,39 +1,42 @@
+#include "SPHbody.h"
 #include <stdio.h>
 #include "SDF.h"
 #include "SDFread.h"
 #include "SDFreadf.h"
 #include <stddef.h>
-//#include "singlio.h"
 #include "Msgs.h"
 #include <stdlib.h>
+#include <math.h>
 
-typedef struct {
-	double x, y, z;             /* position of body */
-	float mass;           /* mass of body */
-	float vx, vy, vz;     /* velocity of body */
-	float u;              /* specific energy of body*/
-	float h;              /* smoothing length of body */
-	float rho;            /* density of body */
-	float pr;            /* pressure of body */
-	float temp;           /* temperature of body */	
-} SPHbody;
+int gnobj, nobj;
+int conf;
+float x,rho,temp,mass,pressure,h,cs,vx,tpos,u;
+int i,j=0;
+double g = 4.0/3.0;
+double mass_in_g = 1.989E+27;        
+double dist_in_cm = 6.955e7;     
+double time_in_s = 1;
+double energy_in_erg,dens_in_gccm,pressure_in_ergperccm,specenergy_in_ergperg;
 
-int main()
+char sdffile[80];
+char asciifile[80];
+
+int main(int argc, char **argv[])
 {
+	energy_in_erg = mass_in_g*dist_in_cm*dist_in_cm/time_in_s/time_in_s;
+	dens_in_gccm = mass_in_g/dist_in_cm/dist_in_cm/dist_in_cm;
+	pressure_in_ergperccm = energy_in_erg/dist_in_cm/dist_in_cm/dist_in_cm;
+	specenergy_in_ergperg = energy_in_erg/mass_in_g;
 	
-	int i,j;
-
-	char name [80];
-	char asciifile[80];
-	printf("filename: ");
-	gets (name);
-	singlPrintf("Reading \"%s\"\n", name);
-
 	SDF *sdfp;
-	SPHbody *inArray;
-	int gnobj, nobj;
-	int conf;
-	sdfp = SDFreadf(name, (void **)&inArray, &gnobj, &nobj, sizeof(SPHbody),
+	SPHbody *body;
+	
+	if (argc < 2){
+		printf("SDF file: ");
+		gets (argv[1]);
+	}
+	
+	sdfp = SDFreadf(argv[1], (void **)&body, &gnobj, &nobj, sizeof(SPHbody),
 					"x", offsetof(SPHbody, x), &conf,
 					"y", offsetof(SPHbody, y), &conf,
 					"z", offsetof(SPHbody, z), &conf,
@@ -45,39 +48,88 @@ int main()
 					"h", offsetof(SPHbody, h), &conf,
 					"rho", offsetof(SPHbody, rho), &conf,
 					"pr", offsetof(SPHbody, pr), &conf,
+					"drho_dt", offsetof(SPHbody, drho_dt), &conf,
+					"udot", offsetof(SPHbody, udot), &conf,
 					"temp", offsetof(SPHbody, temp), &conf,
+					"He4", offsetof(SPHbody, He4), &conf,
+					"C12", offsetof(SPHbody, C12), &conf,
+					"O16", offsetof(SPHbody, O16), &conf,
+					"Ne20", offsetof(SPHbody, Ne20), &conf,
+					"Mg24", offsetof(SPHbody, Mg24), &conf,
+					"Si28", offsetof(SPHbody, Si28), &conf,
+					"S32", offsetof(SPHbody, S32), &conf,
+					"Ar36", offsetof(SPHbody, Ar36), &conf,
+					"Ca40", offsetof(SPHbody, Ca40), &conf,
+					"Ti44", offsetof(SPHbody, Ti44), &conf,
+					"Cr48", offsetof(SPHbody, Cr48), &conf,
+					"Fe52", offsetof(SPHbody, Fe52), &conf,
+					"Ni56", offsetof(SPHbody, Ni56), &conf,
+					"vsound", offsetof(SPHbody, vsound), &conf,
+					"abar", offsetof(SPHbody, abar), &conf,
+					"zbar", offsetof(SPHbody, zbar), &conf,
+					"ax", offsetof(SPHbody, ax), &conf,
+					"ay", offsetof(SPHbody, ay), &conf,
+					"az", offsetof(SPHbody, az), &conf,
+					"lax", offsetof(SPHbody, lax), &conf,
+					"lay", offsetof(SPHbody, lay), &conf,
+					"laz", offsetof(SPHbody, laz), &conf,
+					"gax", offsetof(SPHbody, gax), &conf,
+					"gay", offsetof(SPHbody, gay), &conf,
+					"gaz", offsetof(SPHbody, gaz), &conf,
+					//"grav_mass", offsetof(SPHbody, grav_mass), &conf,
+					"phi", offsetof(SPHbody, phi), &conf,
+					"tacc", offsetof(SPHbody, tacc), &conf,
+					"idt", offsetof(SPHbody, idt), &conf,
+					"nbrs", offsetof(SPHbody, nbrs), &conf,
+					"ident", offsetof(SPHbody, ident), &conf,
+					"windid", offsetof(SPHbody, windid), &conf,
+					//"useless", offsetof(SPHbody, useless), &conf,
 					NULL);
-
+	SDFgetfloatOrDefault(sdfp, "tpos",  &tpos, (float)0.0);
 	
 	
-	//Msgf(("Data read, SPHnobj=%d, SPHgnobj=%d\n", nobj, gnobj));
-	//SDFout *outArray = malloc(sizeof(SDFout) * nobj);
-
-	
-	double **outArray;
-	
-	outArray = (double **) malloc(nobj*sizeof(double *));
-	for(i=0;i<nobj;i++){
-		outArray[i]  = (double *) malloc(4*sizeof(double));
-	}
-	
-	
-	for(i = 0; i < nobj; i++){
-		outArray[i][0] = inArray[i].x;
-		outArray[i][1] = inArray[i].y;
-		outArray[i][2] = inArray[i].z;
-		outArray[i][3] = inArray[i].rho;
-	}
-	
-	snprintf(asciifile, sizeof(asciifile), "%s.ascii", name);
+	snprintf(asciifile, sizeof(asciifile), "%s.ascii", argv[1]);
 	FILE *stream, *fopen();
 	/* declare a stream and prototype fopen */ 
 	
 	stream = fopen(asciifile,"w");
 	
+	fprintf(stream,"**** header **************\n");
+	fprintf(stream,"N-part\t= %d\n",nobj);
+	fprintf(stream,"t-pos\t= %f\n",tpos);
+	fprintf(stream,"**************************\n");
+	fprintf(stream,"\n");
+	fprintf(stream,"x y z mass vx vy vz u h rho pr temp cs He4 C12 O16 Ne20 Mg24 Si28 S32 Ar36 Ca40 Ti44 Cr48 Fe52 Ni56\n");
+	
 	for(i = 0; i < nobj; i++)
 	{
-		fprintf(stream,"%f %f %f %f\n", outArray[i][0],outArray[i][1],outArray[i][2],outArray[i][3]);
+		fprintf(stream,"%e ",body[i].x * dist_in_cm);
+		fprintf(stream,"%e ",body[i].y * dist_in_cm);
+		fprintf(stream,"%e ",body[i].z * dist_in_cm);
+		fprintf(stream,"%e ",body[i].mass * mass_in_g);
+		fprintf(stream,"%e ",body[i].vx * dist_in_cm);
+		fprintf(stream,"%e ",body[i].vy * dist_in_cm);
+		fprintf(stream,"%e ",body[i].vz * dist_in_cm);
+		fprintf(stream,"%e ",body[i].u * specenergy_in_ergperg);
+		fprintf(stream,"%e ",body[i].h * dist_in_cm);
+		fprintf(stream,"%e ",body[i].rho * dens_in_gccm);
+		fprintf(stream,"%e ",body[i].pr * pressure_in_ergperccm);
+		fprintf(stream,"%e ",body[i].temp);
+		fprintf(stream,"%e ",body[i].vsound * dist_in_cm);
+		fprintf(stream,"%e ",body[i].He4);
+		fprintf(stream,"%e ",body[i].C12);
+		fprintf(stream,"%e ",body[i].O16);
+		fprintf(stream,"%e ",body[i].Ne20);
+		fprintf(stream,"%e ",body[i].Mg24);
+		fprintf(stream,"%e ",body[i].Si28);
+		fprintf(stream,"%e ",body[i].S32);
+		fprintf(stream,"%e ",body[i].Ar36);
+		fprintf(stream,"%e ",body[i].Ca40);
+		fprintf(stream,"%e ",body[i].Ti44);
+		fprintf(stream,"%e ",body[i].Cr48);
+		fprintf(stream,"%e ",body[i].Fe52);
+		fprintf(stream,"%e\n",body[i].Ni56);
+		
 	}
 	fclose(stream);
 	
