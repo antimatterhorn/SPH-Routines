@@ -656,7 +656,7 @@
        ifirst = 1
 
 ! open the table
-!       call init_helm_table
+       call init_helm_table
 
 ! read the helmholtz free energy table
        tlo   = 3.0d0
