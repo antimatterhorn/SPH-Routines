@@ -7,7 +7,7 @@
  *
  */
 
-#include "SPHbody.h"
+#include "../SPHbody.h"
 #include <stdio.h>
 #include "SDF.h"
 #include "SDFread.h"
@@ -73,13 +73,7 @@ int main(int argc, char **argv[])
 					"lax", offsetof(SPHbody, lax), &conf,
 					"lay", offsetof(SPHbody, lay), &conf,
 					"laz", offsetof(SPHbody, laz), &conf,
-					"gax", offsetof(SPHbody, gax), &conf,
-					"gay", offsetof(SPHbody, gay), &conf,
-					"gaz", offsetof(SPHbody, gaz), &conf,
-					"grav_mass", offsetof(SPHbody, grav_mass), &conf,
 					"phi", offsetof(SPHbody, phi), &conf,
-					"tacc", offsetof(SPHbody, tacc), &conf,
-					"idt", offsetof(SPHbody, idt), &conf,
 					"nbrs", offsetof(SPHbody, nbrs), &conf,
 					"ident", offsetof(SPHbody, ident), &conf,
 					"windid", offsetof(SPHbody, windid), &conf,

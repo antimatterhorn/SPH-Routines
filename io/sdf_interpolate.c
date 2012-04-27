@@ -6,7 +6,6 @@
 #include <stddef.h>
 #include "Msgs.h"
 #include <stdlib.h>
-#include <omp.h>
 
 
 
@@ -69,6 +68,27 @@ typedef struct {
 	unsigned int useless;  /* to fill the double block (4int=1double)*/		
 } SPHbody;
 
+int gnobj, nobj;
+int conf, i,j,k;
+char filename[80];
+char outfile[80];
+float dt = 0;
+float eps = 0;
+float Gnewt = 0;
+float tolerance = 0;
+float frac_tolerance = 0;
+int ndim = 3;
+float tvel = 0;
+float gamma = 0;
+double ke = 0;
+double pe = 0;
+double te = 0;
+
+float tstart,tend,deltat,tpos;
+int iter,diter,steps,citer;	
+
+float tpos0,tpos,tpos1;
+
 
 float interpfloat(float val0, float val1, float t0, float t1, float ti)
 {
@@ -80,26 +100,14 @@ double interpdouble(double val0, double val1, float t0, float t1, float ti)
 	return (val1-val0)/((double)t1-(double)t0)*((double)ti-(double)t0) + val0;
 }
 
+int Error()
+{
+	printf("File open failed.\nRequested %d, got %d.\n",iter,citer);
+}
+
 int main()
 {
-	int gnobj, nobj;
-	int conf, i,j,k;
-	char filename[80];
-	char outfile[80];
-	float dt = 0;
-	float eps = 0;
-	float Gnewt = 0;
-	float tolerance = 0;
-	float frac_tolerance = 0;
-	int ndim = 3;
-	float tvel = 0;
-	float gamma = 0;
-	double ke = 0;
-	double pe = 0;
-	double te = 0;
-	
-	float tstart,tend,deltat,tpos;
-	int iter,diter,steps;	
+
 	
 	char rootin[80] = "fltmass_sph"; //can be replaced with a gets later
 	char rootout[80] = "interp_sph";
@@ -117,30 +125,23 @@ int main()
 	
 	int thread;
 	
-
-#pragma omp parallel for default(none) \
-	private(i,j,k,filename,nobj,rootout, \
-		gnobj,outfile,dt,eps,Gnewt,tolerance,frac_tolerance, \
-		ndim,tvel,gamma,ke,pe,te,conf,thread) \
-	shared(steps,tstart,deltat,diter,tend,rootin) \
-	firstprivate(iter) 
+ 
 	for(i=0;i<steps;i++)
 	{
-		thread = omp_get_thread_num();
-		printf("thread <%d> is on step %d.\n",thread,i);
+
 		SDF *sdfp0;
 		SDF *sdfp1;
 		
-		double tpos0;
-		double tpos = (float)tstart + (float)i*(float)deltat;
-		double tpos1 = 0;
+		tpos0 = 0;
+		tpos = (float)tstart + (float)i*(float)deltat;
+		tpos1 = 0;
 		iter = iter - diter;
 		j = i+1000;
 		
 		do {
 			iter += diter;
 			
-			printf("thread <%d> is opening %s.%04d.\n",thread,rootin,iter);
+			printf("opening %s.%04d.\n",rootin,iter);
 			
 			snprintf(filename, sizeof(filename), "%s.%04d", rootin, iter);
 			
@@ -148,6 +149,15 @@ int main()
 			
 			sdfp1 = SDFreadf(filename, (void **)&body1, &gnobj, &nobj, sizeof(SPHbody),NULL);
 			SDFgetfloatOrDefault(sdfp1, "tpos",  &tpos1, (float)0.0);
+			SDFgetintOrDefault(sdfp1, "iter",  &citer, 0);
+			
+			if(citer!=iter)
+			{
+				Error();
+				return 0;
+			}
+			
+			printf("requesting t = %3.3f, found t = %3.2f\n",tpos,tpos1);
 			
 			free(body1);
 			SDFclose(sdfp1);

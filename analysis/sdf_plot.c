@@ -84,17 +84,14 @@ int main(int argc, char **argv[])
 					"lax", offsetof(SPHbody, lax), &conf,
 					"lay", offsetof(SPHbody, lay), &conf,
 					"laz", offsetof(SPHbody, laz), &conf,
-					"gax", offsetof(SPHbody, gax), &conf,
-					"gay", offsetof(SPHbody, gay), &conf,
-					"gaz", offsetof(SPHbody, gaz), &conf,
 					//"grav_mass", offsetof(SPHbody, grav_mass), &conf,
-					"phi", offsetof(SPHbody, phi), &conf,
-					"tacc", offsetof(SPHbody, tacc), &conf,
-					"idt", offsetof(SPHbody, idt), &conf,
+					"openup", offsetof(SPHbody, openup), &conf,
+					"opendown", offsetof(SPHbody, opendown), &conf,
+					"openout", offsetof(SPHbody, openout), &conf,
+					"durad", offsetof(SPHbody, durad), &conf,
 					"nbrs", offsetof(SPHbody, nbrs), &conf,
 					"ident", offsetof(SPHbody, ident), &conf,
 					"windid", offsetof(SPHbody, windid), &conf,
-					//"useless", offsetof(SPHbody, useless), &conf,
 					NULL);
 	SDFgetfloatOrDefault(sdfp, "tpos",  &tpos, (float)0.0);
 	SDFgetfloatOrDefault(sdfp, "drtpos",  &drtpos, (float)0.0);
@@ -113,7 +110,7 @@ int main(int argc, char **argv[])
 	
 	outArray = (double **) malloc(nobj*sizeof(double *));
 	for(i=0;i<j;i++){
-		outArray[i]  = (double *) malloc(10*sizeof(double));
+		outArray[i]  = (double *) malloc(14*sizeof(double));
 	}
 	
 	j=0;
@@ -137,6 +134,10 @@ int main(int argc, char **argv[])
 			outArray[j][7] = u;
 			outArray[j][8] = body[i].h * dist_in_cm;
 			outArray[j][9] = udot;
+			outArray[j][10]= body[i].openup;
+			outArray[j][11]= body[i].opendown;
+			outArray[j][12]= body[i].openout;
+			outArray[j][13]= body[i].durad;
 			j++;
 		}
 	}
@@ -148,13 +149,14 @@ int main(int argc, char **argv[])
 	
 	stream = fopen(csvfile,"w");
 
-	fprintf(stream,"x,rho,temp,mass,pr,cs,vx,u,h,udot\n");
+	fprintf(stream,"x,rho,temp,mass,pr,cs,vx,u,h,udot,openup,opendown,openout,durad\n");
 	
 	for(i = 0; i < j; i++)
 	{
-		fprintf(stream,"%e,%e,%e,%e,%e,%e,%e,%e,%e,%e\n", outArray[i][0],outArray[i][1],outArray[i][2],
+		fprintf(stream,"%e,%e,%e,%e,%e,%e,%e,%e,%e,%e,%d,%d,%d,%e\n", outArray[i][0],outArray[i][1],outArray[i][2],
 										outArray[i][3],outArray[i][4],outArray[i][5],outArray[i][6],
-										outArray[i][7],outArray[i][8],outArray[i][9]);
+										outArray[i][7],outArray[i][8],outArray[i][9],outArray[i][10],
+										outArray[i][11],outArray[i][12],outArray[i][13]);
 	}
 	fclose(stream);
 	

@@ -328,6 +328,7 @@ int main(int argc, char **argv[])
 			 "te", SDF_DOUBLE, te,
 			 NULL);
 	free(body1);
+    free(compos);
 	
 	return 0;
 }

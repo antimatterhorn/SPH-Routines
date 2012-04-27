@@ -28,6 +28,7 @@ char sdffile[80];
 char Sifile[80];
 char Nifile[80];
 char COfile[80];
+char Hefile[80];
 char csvfile[80];
 char vszfile[80];
 char pdffile[80];
@@ -93,12 +94,13 @@ int main(int argc, char **argv[])
 	SDF *sdfp;
 	SPHbody *body;
 	
-	if (argc < 4){
+	if (argc < 6){
 		usage();
 		return 0;
 	}else {
-		pixels = atoi(argv[2]);
-		xmax = atof(argv[3]);
+		pixels = atoi(argv[3]);
+		xmax = atof(argv[4]);
+        maxrho = atof(argv[5]);
 	}
 		
 	sdfp = SDFreadf(argv[1], (void **)&body, &gnobj, &nobj, sizeof(SPHbody),
@@ -189,13 +191,20 @@ int main(int argc, char **argv[])
 	for(i=0;i<pixels;i++){
 		imgCO[i]  = (double *) malloc(pixels*sizeof(double));
 	}
+    
+    double **imgHe;
+	
+	imgHe = (double **) malloc(pixels*sizeof(double *));
+	for(i=0;i<pixels;i++){
+		imgHe[i]  = (double *) malloc(pixels*sizeof(double));
+	}
 	
 	//fill arrays with 0s?
 	for(i = 0; i < pixels; i++)
 	{
 		for(j = 0; j < pixels; j++)
 		{
-			imgSi[i][j]=imgNi[i][j]=imgCO[i][j]=img[i][j]=dens[i][j]=0;
+			imgSi[i][j]=imgNi[i][j]=imgCO[i][j]=imgHe[i][j]=img[i][j]=dens[i][j]=0;
 		}
 	}
 	
@@ -230,6 +239,7 @@ int main(int argc, char **argv[])
 				{
 					dens[ic][jc]	+= rho;
 					img[ic][jc]		+= rho*rho;
+                    imgHe[ic][jc]   += p->He4;
 					imgCO[ic][jc]	+= 0.5*(p->C12+p->O16);
 					imgSi[ic][jc]	+= p->Si28;
 					imgNi[ic][jc]	+= p->Ni56;
@@ -250,7 +260,8 @@ int main(int argc, char **argv[])
 							{							
 								dens[imi][imj]	+= rho;		
 								img[imi][imj]	+= rho*rho*w(h,2*rr*(double)xmax/(double)pixels)*pi*pow(h,3.0);
-								imgCO[imi][imj]	+= 0.5*(p->C12+p->O16);
+								imgHe[imi][imj]	+= p->He4;
+                                imgCO[imi][imj]	+= 0.5*(p->C12+p->O16);
 								imgSi[imi][imj]	+= p->Si28;
 								imgNi[imi][imj]	+= p->Ni56;
 							}
@@ -264,6 +275,7 @@ int main(int argc, char **argv[])
 	}
 	
 	//open the stream file
+    snprintf(Hefile, sizeof(Hefile), "%s_He.csv", argv[1]);
 	snprintf(Sifile, sizeof(Sifile), "%s_Si.csv", argv[1]);
 	snprintf(Nifile, sizeof(Nifile), "%s_Ni.csv", argv[1]);
 	snprintf(COfile, sizeof(COfile), "%s_CO.csv", argv[1]);
@@ -277,6 +289,18 @@ int main(int argc, char **argv[])
 		for(j = 0; j < pixels; j++)
 		{
 			if (dens[i][j] != 0) {fprintf(stream,"%f ", (double)img[i][j]/(double)dens[i][j]);}
+			else {fprintf(stream,"%f ", 0.0);}
+		}
+		fprintf(stream,"\n");
+	}
+	fclose(stream);
+    
+    stream = fopen(Hefile,"w");
+	for(i = 0; i < pixels; i++)
+	{
+		for(j = 0; j < pixels; j++)
+		{
+			if (dens[i][j] != 0) {fprintf(stream,"%f ", (double)imgHe[i][j]);}
 			else {fprintf(stream,"%f ", 0.0);}
 		}
 		fprintf(stream,"\n");
@@ -326,9 +350,9 @@ int main(int argc, char **argv[])
 	snprintf(pdffile, sizeof(pdffile), "%s_rho.png", argv[1]);
 	
 	vsz = fopen(vszfile,"w");
-	
-	fprintf(vsz,"AddImportPath('%s')\n",cwd);
+
 	fprintf(vsz,"ImportFile2D(u'%s', [u'ds'], invertrows=False, invertcols=False, transpose=True, linked=True)\n",csvfile);
+    fprintf(vsz,"ImportFile2D(u'%s', [u'dsHe'], invertrows=False, invertcols=False, transpose=True, linked=True)\n",Hefile);
 	fprintf(vsz,"ImportFile2D(u'%s', [u'dsCO'], invertrows=False, invertcols=False, transpose=True, linked=True)\n",COfile);
 	fprintf(vsz,"ImportFile2D(u'%s', [u'dsSi'], invertrows=False, invertcols=False, transpose=True, linked=True)\n",Sifile);
 	fprintf(vsz,"ImportFile2D(u'%s', [u'dsNi'], invertrows=False, invertcols=False, transpose=True, linked=True)\n",Nifile);
@@ -359,29 +383,18 @@ int main(int argc, char **argv[])
 	fprintf(vsz,"Set('label', u'rho [g/cc]')\n");
 	fprintf(vsz,"Set('TickLabels/color', u'black')\n");
 	fprintf(vsz,"Set('vertPosn', u'top')\n");
-	fprintf(vsz,"To('..')\n");
-	fprintf(vsz,"Add('image', name='image3', autoadd=False)\n");
-	fprintf(vsz,"To('image3')\n");
+    fprintf(vsz,"To('..')\n");
+	fprintf(vsz,"Add('image', name='image4', autoadd=False)\n");
+	fprintf(vsz,"To('image4')\n");
 	fprintf(vsz,"Set('data', u'ds')\n");
 	fprintf(vsz,"Set('min', 1.0)\n");
 	fprintf(vsz,"Set('max', %f)\n",maxrho);
 	fprintf(vsz,"Set('colorScaling', u'log')\n");
-	fprintf(vsz,"Set('transparencyData', u'dsNi')\n");
-	fprintf(vsz,"Set('colorMap', u'blue')\n");
+	fprintf(vsz,"Set('transparencyData', u'dsHe')\n");
+	fprintf(vsz,"Set('colorMap', u'grey')\n");
 	fprintf(vsz,"Set('colorInvert', True)\n");
 	fprintf(vsz,"Set('smooth', True)\n");
-	fprintf(vsz,"To('..')\n");
-	fprintf(vsz,"Add('image', name='image2', autoadd=False)\n");
-	fprintf(vsz,"To('image2')\n");
-	fprintf(vsz,"Set('data', u'ds')\n");
-	fprintf(vsz,"Set('min', 1.0)\n");
-	fprintf(vsz,"Set('max', %f)\n",maxrho);
-	fprintf(vsz,"Set('colorScaling', u'log')\n");
-	fprintf(vsz,"Set('transparencyData', u'dsSi')\n");
-	fprintf(vsz,"Set('colorMap', u'red')\n");
-	fprintf(vsz,"Set('colorInvert', True)\n");
-	fprintf(vsz,"Set('smooth', True)\n");
-	fprintf(vsz,"To('..')\n");
+    fprintf(vsz,"To('..')\n");
 	fprintf(vsz,"Add('image', name='image1', autoadd=False)\n");
 	fprintf(vsz,"To('image1')\n");
 	fprintf(vsz,"Set('data', u'ds')\n");
@@ -392,6 +405,31 @@ int main(int argc, char **argv[])
 	fprintf(vsz,"Set('colorMap', u'green')\n");
 	fprintf(vsz,"Set('colorInvert', True)\n");
 	fprintf(vsz,"Set('smooth', True)\n");
+    fprintf(vsz,"To('..')\n");
+	fprintf(vsz,"Add('image', name='image2', autoadd=False)\n");
+	fprintf(vsz,"To('image2')\n");
+	fprintf(vsz,"Set('data', u'ds')\n");
+	fprintf(vsz,"Set('min', 1.0)\n");
+	fprintf(vsz,"Set('max', %f)\n",maxrho);
+	fprintf(vsz,"Set('colorScaling', u'log')\n");
+	fprintf(vsz,"Set('transparencyData', u'dsSi')\n");
+	fprintf(vsz,"Set('colorMap', u'red')\n");
+	fprintf(vsz,"Set('colorInvert', True)\n");
+	fprintf(vsz,"Set('smooth', True)\n");
+	fprintf(vsz,"To('..')\n");    
+	fprintf(vsz,"Add('image', name='image3', autoadd=False)\n");
+	fprintf(vsz,"To('image3')\n");
+	fprintf(vsz,"Set('data', u'ds')\n");
+	fprintf(vsz,"Set('min', 1.0)\n");
+	fprintf(vsz,"Set('max', %f)\n",maxrho);
+	fprintf(vsz,"Set('colorScaling', u'log')\n");
+	fprintf(vsz,"Set('transparencyData', u'dsNi')\n");
+	fprintf(vsz,"Set('colorMap', u'blue')\n");
+	fprintf(vsz,"Set('colorInvert', True)\n");
+	fprintf(vsz,"Set('smooth', True)\n");
+
+
+
 	fprintf(vsz,"To('..')\n");
 	fprintf(vsz,"To('..')\n");
 	fprintf(vsz,"To('..')\n");

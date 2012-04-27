@@ -16,6 +16,7 @@
 #include "Msgs.h"
 #include <stdlib.h>
 #include <math.h>
+#include <omp.h>
 
 int gnobj, nobj;
 int conf;
@@ -110,6 +111,12 @@ int main(int argc, char **argv[])
 		map[i]  = (double *) malloc(nx*sizeof(double));
 	}
 	
+	for(i=0;i<nx;i++){
+		for(j=0;j<nx;j++){
+			map[i][j] = 0;
+		}
+	}
+	
 	double **plot; //potx,pot
 	
 	plot = (double **) malloc(nx*sizeof(double *));
@@ -124,49 +131,57 @@ int main(int argc, char **argv[])
 		part[i]  = (double *) malloc(4*sizeof(double));
 	}
 	
-	for(j=0;j<nx;j++){
-		y = (-xmax + j*dx);
-		
-		for(i=0;i<nx;i++){
-			x = (-xmax + i*dx);
-			pot = 0;
-			plot[i][0] = x*dist_in_cm;
+	for(bi=0;bi<nobj;bi++){
+		bx = body[bi].x;
+		by = body[bi].y;					
+				
+		if(boolMade==0){
+			part[bi][0] = bx*dist_in_cm;
+			part[bi][1] = by*dist_in_cm;
 			
-			for(bi=0;bi<nobj;bi++){
-				bx = body[bi].x;
-				by = body[bi].y;					
-				pot -= Gnewt*body[bi].mass/sqrt((x-bx)*(x-bx)+(y-by)*(y-by));
-				
-				
-				
-				if(boolMade==0){
-					part[bi][0] = bx*dist_in_cm;
-					part[bi][1] = by*dist_in_cm;
-					
-					//for(bj=0;bj<nobj;bj++){
-//						if(bj!=bi){
-//							bbx = body[bj].x;
-//							bby = body[bj].y; 
-//							part[bi][2] -= Gnewt*body[bj].mass/sqrt((bx-bbx)*(bx-bbx)+(by-bby)*(by-bby));
-//						}
-//						//printf("%d-%d\n",bi,bj);
-//					}
-					part[bi][2] = body[bi].phi;
-					part[bi][2] -= 0.5*omega*omega*(bx*bx+by*by);
-					part[bi][3] = 0.5*body[bi].h - body[bi].z;
-					
-					if(bi%1000 == 0) printf("%d\n",bi);
-				}
-			}
-			boolMade=1;
-			pot -= 0.5*omega*omega*(x*x+y*y);
-			map[j][i] = pot;
-			if(j==nx>>1) plot[i][1] = pot;
+			//for(bj=0;bj<nobj;bj++){
+			//						if(bj!=bi){
+			//							bbx = body[bj].x;
+			//							bby = body[bj].y; 
+			//							part[bi][2] -= Gnewt*body[bj].mass/sqrt((bx-bbx)*(bx-bbx)+(by-bby)*(by-bby));
+			//						}
+			//						//printf("%d-%d\n",bi,bj);
+			//					}
+			part[bi][2] = body[bi].phi;
+			part[bi][2] -= 0.5*omega*omega*(bx*bx+by*by);
+			part[bi][3] = 0.5*body[bi].h - body[bi].z;
 			
-			printf("%3.2f\n",(double)(i+j*nx)/(double)(nx*nx));
+			if(bi%1000 == 0) printf("%d\n",bi);
 		}
 	}
 	
+#pragma omp parallel for private(i,j,bi,boolMade,x,y,pot,bx,by)\
+	default(none) shared(body,nx,xmax,dx,dist_in_cm,map,plot,Gnewt,omega,nobj)
+	
+		for(j=0;j<nx;j++){
+			y = (-xmax + j*dx);
+			
+			for(i=0;i<nx;i++){
+				x = (-xmax + i*dx);
+				pot = 0;
+				plot[i][0] = x*dist_in_cm;
+				
+				for(bi=0;bi<nobj;bi++){
+					bx = body[bi].x;
+					by = body[bi].y;					
+					pot -= Gnewt*body[bi].mass/sqrt((x-bx)*(x-bx)+(y-by)*(y-by));
+				}
+				pot -= 0.5*omega*omega*(x*x+y*y);
+				map[j][i] = pot;
+				if(j==nx>>1) plot[i][1] = pot;
+				
+				
+			}
+			printf("<%d> : %d : %d\n",omp_get_thread_num(),(i),(nx));
+		}
+		
+	
+		
 	snprintf(csv1, sizeof(csv1), "%s_potmap.csv", argv[1]);
 	snprintf(csv2, sizeof(csv2), "%s_map.csv", argv[1]);
 	snprintf(csv3, sizeof(csv3), "%s_pot.csv", argv[1]);

@@ -39,7 +39,7 @@ int main(int argc, char **argv[])
 {
 
 	
-	double cm[3],mr[3];
+	double cm[3],mr[3],vr[3];
 	
 	SDF *sdfp;
 	SPHbody *body1;
@@ -126,10 +126,16 @@ int main(int argc, char **argv[])
 		mr[0] += body1[i].mass * body1[i].x;
 		mr[1] += body1[i].mass * body1[i].y;
 		mr[2] += body1[i].mass * body1[i].z;
+		vr[0] += body1[i].mass * body1[i].vx;
+		vr[1] += body1[i].mass * body1[i].vy;
+		vr[2] += body1[i].mass * body1[i].vz;
 		tmass += body1[i].mass;
 	}
 	
-	for (i=0;i<3;i++) cm[i] = mr[i]/tmass;
+	for (i=0;i<3;i++) {
+		cm[i] = mr[i]/tmass;
+		vr[i] = vr[i]/tmass;
+	}
 	
 	printf("cmx = %3.3f\ncmy = %3.3f\n",cm[0],cm[1]);
 	printf("cx = %3.3f\ncy = %3.3f\n",cx,cy);
@@ -145,7 +151,9 @@ int main(int argc, char **argv[])
 			body1[i].z -= cm[2];
 		}
 		
-
+		body1[i].vx -= vr[0];
+		body1[i].vy -= vr[1];
+		body1[i].vz -= vr[2];
 	}
 	
 	//write the output file

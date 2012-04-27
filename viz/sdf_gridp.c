@@ -26,8 +26,10 @@ float tpos;
 int choice,pixels,threads;
 int i,j,k;
 char sdffile[80];
-char csvfile[80];
-char vszfile[80];
+char csvfile1[80];
+char vszfile1[80];
+char csvfile2[80];
+char vszfile2[80];
 char pdffile[80];
 
 double dist_in_cm;
@@ -59,6 +61,20 @@ double w(double hi, double ri)
 	else if (v > 1 && v <= 2)
 	{
 		return coef*0.25*pow(2.0-v,3.0);
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+double wstep(double hi, double ri)
+{
+	double v = fabs(ri)/hi;
+	double coef = pow(pi,-1.0)*pow(hi,-3.0);
+	if (v <= 2 && v >= 0)
+	{
+		return coef;
 	}
 	else
 	{
@@ -156,14 +172,16 @@ int main(int argc, char **argv[])
 	
 	threads = omp_get_max_threads();
 	
-	double **img, **(my_img[threads]);
+	double **img1, **img2, **(my_img1[threads]), **(my_img2[threads]);
 	
-	img = (double **) malloc(pixels*sizeof(double *));
+	img1 = (double **) malloc(pixels*sizeof(double *));
+	img2 = (double **) malloc(pixels*sizeof(double *));
 	for(i=0;i<pixels;i++){
-		img[i]  = (double *) malloc(pixels*sizeof(double));
+		img1[i]  = (double *) malloc(pixels*sizeof(double));
+		img2[i]  = (double *) malloc(pixels*sizeof(double));
 		for(j=0;j<pixels;j++)
 		{
-			img[i][j] = 0;
+			img1[i][j] = img2[i][j] = 0;
 		}
 	}
 	
@@ -171,15 +189,18 @@ int main(int argc, char **argv[])
 	time = omp_get_wtime();
 	
 #pragma omp parallel private(k,i,j) \
-	shared(pixels,xmax,ymax,body,choice,my_img,nobj,dens_in_gccm,threads) default(none)
+	shared(pixels,xmax,ymax,body,choice,my_img1,my_img2,nobj,dens_in_gccm,threads) default(none)
 	{
 		int idx = omp_get_thread_num();
-		my_img[idx] = (double **) malloc(pixels*sizeof(double *));
+		my_img1[idx] = (double **) malloc(pixels*sizeof(double *));
+		my_img2[idx] = (double **) malloc(pixels*sizeof(double *));
+
 		for(i=0;i<pixels;i++){
-			my_img[idx][i] = (double *) malloc(pixels*sizeof(double));
+			my_img1[idx][i] = (double *) malloc(pixels*sizeof(double));
+			my_img2[idx][i] = (double *) malloc(pixels*sizeof(double));
 			for(j=0;j<pixels;j++)
 			{
-				my_img[idx][i][j] = 0;
+				my_img1[idx][i][j] = my_img2[idx][i][j] = 0;
 			}
 		}
 		
@@ -203,16 +224,8 @@ int main(int argc, char **argv[])
 				
 				if(hc<1){ /* particle is smaller than a pixel, fill pixel instead */
 					kern = w(h,0);
-					switch( choice )
-					{
-						case 1 :
-							my_img[idx][ic][jc] += mass*kern*dens_in_gccm;
-							break;
-						case 2 :
-							my_img[idx][ic][jc] += mass*temp/rho*kern;
-							break;
-					}
-					
+					my_img1[idx][ic][jc] += mass*kern*dens_in_gccm;
+					my_img2[idx][ic][jc] += mass*kern*dens_in_gccm*temp;					
 				}else{
 					for(i=ic-hc;i<ic+hc+1;i++)
 					{
@@ -224,17 +237,9 @@ int main(int argc, char **argv[])
 								
 								r = sqrt(pow(xc-x,2.0)+pow(yc-y,2.0)+z*z);
 								kern = w(h,r);
-								switch( choice )
-								{
-									case 1 :
-										my_img[idx][i][j] += mass*kern*dens_in_gccm;
-										break;
-									case 2 :
-										my_img[idx][i][j] += mass*temp/rho*kern;
-										break;
-								}
+								my_img1[idx][i][j] += mass*kern*dens_in_gccm;
+								my_img2[idx][i][j] += mass*kern*dens_in_gccm*temp;
 							}
-							
 						}
 					}
 				}	
@@ -252,165 +257,159 @@ int main(int argc, char **argv[])
 	{
 		for(j=0;j<pixels;j++)
 		{
-			for(idx=0;idx<threads;idx++) img[i][j] += my_img[idx][i][j];
+			for(idx=0;idx<threads;idx++) 
+			{
+				
+				
+				img1[i][j] += my_img1[idx][i][j];
+				img2[i][j] += my_img2[idx][i][j]; 
+			}
+		}
+	}
+	
+	for(i=0;i<pixels;i++)
+	{
+		for(j=0;j<pixels;j++)
+		{
+				//printf("i=%d\tj=%d\n",i,j);
+				img2[i][j] = ((img1[i][j]>0) ? img2[i][j]/img1[i][j] : 0); 
+
 		}
 	}
 		
-	for(idx=0;idx<threads;idx++) free(my_img[idx]);
+	//printf("freeing shared memory...\n");
+	for(idx=0;idx<threads;idx++) 
+	{
+		free(my_img1[idx]);
+		free(my_img2[idx]);
+	}
 	
 	time = omp_get_wtime() - time;	
-	printf("%3.2fs\nwriting the files...\t",time);
+	printf("%3.2fs\nmaking files...\t\t",time);
 	time = omp_get_wtime();
+
+	snprintf(csvfile1, sizeof(csvfile1), "%s_rho.csv", argv[1]);
+	snprintf(csvfile2, sizeof(csvfile2), "%s_temp.csv", argv[1]);
+
+	FILE *stream1, *stream2, *fopen();
 	
-	switch (choice){
-		case 1:
-			snprintf(csvfile, sizeof(csvfile), "%s_rho.csv", argv[1]);
-			break;
-		case 2:
-			snprintf(csvfile, sizeof(csvfile), "%s_temp.csv", argv[1]);
-			break;
-	}
-	
-#pragma omp parallel num_threads(2) \
-	default(none) shared(img,choice,csvfile,vszfile,pdffile,argv,pixels,tpos,maxrho) \
-	private(i,j)
+	stream1 = fopen(csvfile1,"w");
+	stream2 = fopen(csvfile2,"w");
+	for(i = 0; i < pixels; i++)
 	{
-	#pragma omp sections nowait
+		for(j = 0; j < pixels; j++)
 		{
-		
-		#pragma omp section
-			{
-				FILE *stream, *fopen();
-				
-				stream = fopen(csvfile,"w");
-				
-				for(i = 0; i < pixels; i++)
-				{
-					for(j = 0; j < pixels; j++)
-					{
-						fprintf(stream,"%f ", (double)img[i][j]);
-					}
-					fprintf(stream,"\n");
-				}
-				
-				fclose(stream);
-			}
-			
-		#pragma omp section
-			{
-				
-				FILE *fopen(), *vsz;
-				char *cwd = getcwd(NULL, 0);
-				
-				switch (choice) 
-				{
-					case 1:
-						snprintf(vszfile, sizeof(vszfile), "%s_rho.vsz", argv[1]);
-						snprintf(pdffile, sizeof(pdffile), "%s_rho.png", argv[1]);
-						
-						vsz = fopen(vszfile,"w");
-						
-						fprintf(vsz,"ImportFile2D(u'%s/%s', [u'ds'], invertrows=False, invertcols=False, 
-								transpose=True, linked=True)\n",cwd,csvfile);
-						fprintf(vsz,"Add('page', name='page1', autoadd=False)\n");
-						fprintf(vsz,"To('page1')\n");
-						fprintf(vsz,"Add('graph', name='graph1', autoadd=False)\n");
-						fprintf(vsz,"To('graph1')\n");
-						fprintf(vsz,"Set('leftMargin', u'0cm')\n");
-						fprintf(vsz,"Set('rightMargin', u'0cm')\n");
-						fprintf(vsz,"Set('topMargin', u'0cm')\n");
-						fprintf(vsz,"Set('bottomMargin', u'0cm')\n");
-						fprintf(vsz,"Add('axis', name='x', autoadd=False)\n");
-						fprintf(vsz,"Add('axis', name='y', autoadd=False)\n");
-						fprintf(vsz,"To('y')\n");
-						fprintf(vsz,"Set('direction', 'vertical')\n");
-						fprintf(vsz,"To('..')\n");
-						fprintf(vsz,"Add('label', name='label1', autoadd=False)\n");
-						fprintf(vsz,"To('label1')\n");
-						fprintf(vsz,"Set('label', u't=%f')\n",tpos);
-						fprintf(vsz,"Set('xPos', [0.050000000000000003])\n");
-						fprintf(vsz,"Set('yPos', [0.05000000000000002])\n");
-						fprintf(vsz,"Set('Text/size', u'18pt')\n");
-						fprintf(vsz,"Set('Text/color', u'black')\n");
-						fprintf(vsz,"To('..')\n");
-						fprintf(vsz,"Add('colorbar', name='colorbar1', autoadd=False)\n");
-						fprintf(vsz,"To('colorbar1')\n");
-						fprintf(vsz,"Set('image', u'image1')\n");
-						fprintf(vsz,"Set('label', u'rho [g/cc]')\n");
-						fprintf(vsz,"Set('autoExtend', False)\n");
-						fprintf(vsz,"Set('autoExtendZero', False)\n");
-						fprintf(vsz,"Set('TickLabels/color', u'black')\n");
-						fprintf(vsz,"Set('vertPosn', u'top')\n");
-						fprintf(vsz,"To('..')\n");
-						fprintf(vsz,"Add('image', name='image1', autoadd=False)\n");
-						fprintf(vsz,"To('image1')\n");
-						fprintf(vsz,"Set('data', u'ds')\n");
-						fprintf(vsz,"Set('min', 0.01)\n");
-						fprintf(vsz,"Set('max', %f)\n",maxrho);
-						fprintf(vsz,"Set('colorScaling', u'log')\n");
-						fprintf(vsz,"Set('colorMap', u'heat2')\n");
-						fprintf(vsz,"Set('colorInvert', True)\n");
-						fprintf(vsz,"Set('smooth', True)\n");
-						break;
-					case 2:
-						snprintf(vszfile, sizeof(vszfile), "%s_temp.vsz", argv[1]);
-						snprintf(pdffile, sizeof(pdffile), "%s_temp.png", argv[1]);
-						
-						vsz = fopen(vszfile,"w");
-						
-						fprintf(vsz,"ImportFile2D(u'%s/%s', [u'ds'], invertrows=False, invertcols=False, 
-								transpose=True, linked=True)\n",cwd,csvfile);
-						fprintf(vsz,"Add('page', name='page1', autoadd=False)\n");
-						fprintf(vsz,"To('page1')\n");
-						fprintf(vsz,"Add('graph', name='graph1', autoadd=False)\n");
-						fprintf(vsz,"To('graph1')\n");
-						fprintf(vsz,"Set('leftMargin', u'0cm')\n");
-						fprintf(vsz,"Set('rightMargin', u'0cm')\n");
-						fprintf(vsz,"Set('topMargin', u'0cm')\n");
-						fprintf(vsz,"Set('bottomMargin', u'0cm')\n");
-						fprintf(vsz,"Add('axis', name='x', autoadd=False)\n");
-						fprintf(vsz,"Add('axis', name='y', autoadd=False)\n");
-						fprintf(vsz,"To('y')\n");
-						fprintf(vsz,"Set('direction', 'vertical')\n");
-						fprintf(vsz,"To('..')\n");
-						fprintf(vsz,"Add('label', name='label1', autoadd=False)\n");
-						fprintf(vsz,"To('label1')\n");
-						fprintf(vsz,"Set('label', u't=%f')\n",tpos);
-						fprintf(vsz,"Set('xPos', [0.050000000000000003])\n");
-						fprintf(vsz,"Set('yPos', [0.90000000000000002])\n");
-						fprintf(vsz,"Set('Text/size', u'18pt')\n");
-						fprintf(vsz,"Set('Text/color', u'white')\n");
-						fprintf(vsz,"To('..')\n");
-						fprintf(vsz,"Add('colorbar', name='colorbar1', autoadd=False)\n");
-						fprintf(vsz,"To('colorbar1')\n");
-						fprintf(vsz,"Set('image', u'image1')\n");
-						fprintf(vsz,"Set('autoExtend', False)\n");
-						fprintf(vsz,"Set('autoExtendZero', False)\n");
-						fprintf(vsz,"Set('TickLabels/color', u'white')\n");
-						fprintf(vsz,"To('..')\n");
-						fprintf(vsz,"Add('image', name='image1', autoadd=False)\n");
-						fprintf(vsz,"To('image1')\n");
-						fprintf(vsz,"Set('data', u'ds')\n");
-						fprintf(vsz,"Set('min', 2e8)\n");
-						fprintf(vsz,"Set('max', 'Auto')\n");
-						fprintf(vsz,"Set('colorScaling', u'linear')\n");
-						fprintf(vsz,"Set('colorMap', u'spectrum')\n");
-						fprintf(vsz,"Set('colorInvert', False)\n");
-						fprintf(vsz,"Set('smooth', True)\n");
-						break;
-				}
-				
-				fclose(vsz);
-			}
+			fprintf(stream1,"%f ", (double)img1[i][j]);
+			fprintf(stream2,"%f ", (double)img2[i][j]);
 		}
-		
+		fprintf(stream1,"\n");
+		fprintf(stream2,"\n");
 	}
+	
+	fclose(stream1);
+	fclose(stream2);
+
+	
+	FILE *vsz1, *vsz2;
+	
+	snprintf(vszfile1, sizeof(vszfile1), "%s_rho.vsz", argv[1]);						
+	vsz1 = fopen(vszfile1,"w");
+	
+	fprintf(vsz1,"ImportFile2D(u'%s', [u'ds'], invertrows=False, invertcols=False,transpose=True, linked=True)\n",csvfile1);
+	fprintf(vsz1,"Add('page', name='page1', autoadd=False)\n");
+	fprintf(vsz1,"To('page1')\n");
+	fprintf(vsz1,"Add('graph', name='graph1', autoadd=False)\n");
+	fprintf(vsz1,"To('graph1')\n");
+	fprintf(vsz1,"Set('leftMargin', u'0cm')\n");
+	fprintf(vsz1,"Set('rightMargin', u'0cm')\n");
+	fprintf(vsz1,"Set('topMargin', u'0cm')\n");
+	fprintf(vsz1,"Set('bottomMargin', u'0cm')\n");
+	fprintf(vsz1,"Add('axis', name='x', autoadd=False)\n");
+	fprintf(vsz1,"Add('axis', name='y', autoadd=False)\n");
+	fprintf(vsz1,"To('y')\n");
+	fprintf(vsz1,"Set('direction', 'vertical')\n");
+	fprintf(vsz1,"To('..')\n");
+	fprintf(vsz1,"Add('label', name='label1', autoadd=False)\n");
+	fprintf(vsz1,"To('label1')\n");
+	fprintf(vsz1,"Set('label', u't=%f')\n",tpos);
+	fprintf(vsz1,"Set('xPos', [0.050000000000000003])\n");
+	fprintf(vsz1,"Set('yPos', [0.05000000000000002])\n");
+	fprintf(vsz1,"Set('Text/size', u'18pt')\n");
+	fprintf(vsz1,"Set('Text/color', u'black')\n");
+	fprintf(vsz1,"To('..')\n");
+	fprintf(vsz1,"Add('colorbar', name='colorbar1', autoadd=False)\n");
+	fprintf(vsz1,"To('colorbar1')\n");
+	fprintf(vsz1,"Set('image', u'image1')\n");
+	fprintf(vsz1,"Set('label', u'rho [g/cc]')\n");
+	fprintf(vsz1,"Set('autoExtend', False)\n");
+	fprintf(vsz1,"Set('autoExtendZero', False)\n");
+	fprintf(vsz1,"Set('TickLabels/color', u'black')\n");
+	fprintf(vsz1,"Set('vertPosn', u'top')\n");
+	fprintf(vsz1,"To('..')\n");
+	fprintf(vsz1,"Add('image', name='image1', autoadd=False)\n");
+	fprintf(vsz1,"To('image1')\n");
+	fprintf(vsz1,"Set('data', u'ds')\n");
+	fprintf(vsz1,"Set('min', 0.01)\n");
+	fprintf(vsz1,"Set('max', %f)\n",maxrho);
+	fprintf(vsz1,"Set('colorScaling', u'log')\n");
+	fprintf(vsz1,"Set('colorMap', u'heat2')\n");
+	fprintf(vsz1,"Set('colorInvert', True)\n");
+	fprintf(vsz1,"Set('smooth', True)\n");
+	
+	fclose(vsz1);
+	
+	snprintf(vszfile2, sizeof(vszfile2), "%s_temp.vsz", argv[1]);						
+	vsz2 = fopen(vszfile2,"w");
+			
+	fprintf(vsz2,"ImportFile2D(u'%s', [u'ds'], invertrows=False, invertcols=False, transpose=True, linked=True)\n",csvfile2);
+	fprintf(vsz2,"Add('page', name='page1', autoadd=False)\n");
+	fprintf(vsz2,"To('page1')\n");
+	fprintf(vsz2,"Add('graph', name='graph1', autoadd=False)\n");
+	fprintf(vsz2,"To('graph1')\n");
+	fprintf(vsz2,"Set('leftMargin', u'0cm')\n");
+	fprintf(vsz2,"Set('rightMargin', u'0cm')\n");
+	fprintf(vsz2,"Set('topMargin', u'0cm')\n");
+	fprintf(vsz2,"Set('bottomMargin', u'0cm')\n");
+	fprintf(vsz2,"Add('axis', name='x', autoadd=False)\n");
+	fprintf(vsz2,"Add('axis', name='y', autoadd=False)\n");
+	fprintf(vsz2,"To('y')\n");
+	fprintf(vsz2,"Set('direction', 'vertical')\n");
+	fprintf(vsz2,"To('..')\n");
+	fprintf(vsz2,"Add('label', name='label1', autoadd=False)\n");
+	fprintf(vsz2,"To('label1')\n");
+	fprintf(vsz2,"Set('label', u't=%f')\n",tpos);
+	fprintf(vsz2,"Set('xPos', [0.050000000000000003])\n");
+	fprintf(vsz2,"Set('yPos', [0.90000000000000002])\n");
+	fprintf(vsz2,"Set('Text/size', u'18pt')\n");
+	fprintf(vsz2,"Set('Text/color', u'white')\n");
+	fprintf(vsz2,"To('..')\n");
+	fprintf(vsz2,"Add('colorbar', name='colorbar1', autoadd=False)\n");
+	fprintf(vsz2,"To('colorbar1')\n");
+	fprintf(vsz2,"Set('image', u'image1')\n");
+	fprintf(vsz2,"Set('autoExtend', False)\n");
+	fprintf(vsz2,"Set('autoExtendZero', False)\n");
+	fprintf(vsz2,"Set('TickLabels/color', u'white')\n");
+	fprintf(vsz2,"To('..')\n");
+	fprintf(vsz2,"Add('image', name='image1', autoadd=False)\n");
+	fprintf(vsz2,"To('image1')\n");
+	fprintf(vsz2,"Set('data', u'ds')\n");
+	fprintf(vsz2,"Set('min', 1e7)\n");
+	fprintf(vsz2,"Set('max', 2e8)\n");
+	fprintf(vsz2,"Set('colorScaling', u'linear')\n");
+	fprintf(vsz2,"Set('colorMap', u'spectrum2')\n");
+	fprintf(vsz2,"Set('colorInvert', False)\n");
+	fprintf(vsz2,"Set('smooth', True)\n");
+	
+	
+	fclose(vsz2);
+		
+	time = omp_get_wtime() - time;
+	printf("%3.2fs\n",time);
 		
 	free(body);
-	free(img);
+	free(img1);
+	free(img2);
 	
-	time = omp_get_wtime() - time;	
-	printf("%3.2fs\n",time);
 	
 	return 0;
 }

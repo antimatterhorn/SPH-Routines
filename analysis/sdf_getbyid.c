@@ -117,13 +117,7 @@ int main(int argc, char **argv[])
 						"lax", offsetof(SPHbody, lax), &conf,
 						"lay", offsetof(SPHbody, lay), &conf,
 						"laz", offsetof(SPHbody, laz), &conf,
-						"gax", offsetof(SPHbody, gax), &conf,
-						"gay", offsetof(SPHbody, gay), &conf,
-						"gaz", offsetof(SPHbody, gaz), &conf,
-						"grav_mass", offsetof(SPHbody, grav_mass), &conf,
 						"phi", offsetof(SPHbody, phi), &conf,
-						"tacc", offsetof(SPHbody, tacc), &conf,
-						"idt", offsetof(SPHbody, idt), &conf,
 						"sigma", offsetof(SPHbody, sigma), &conf,
 						"kappa", offsetof(SPHbody, kappa), &conf,
 						"nbrs", offsetof(SPHbody, nbrs), &conf,
@@ -131,7 +125,7 @@ int main(int argc, char **argv[])
 						"windid", offsetof(SPHbody, windid), &conf,
 						//"useless", offsetof(SPHbody, useless), &conf,
 						NULL);
-		SDFgetfloatOrDefault(sdfp, "drtpos",  &tpos, (float)0.0);
+		SDFgetfloatOrDefault(sdfp, "tpos",  &tpos, (float)0.0);
 		singlPrintf("%s has %d particles.\n", sdffile, gnobj);
 		SDFclose(sdfp);
 		
