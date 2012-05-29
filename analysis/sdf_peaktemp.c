@@ -7,7 +7,7 @@
  *
  */
 
-#include "../SPHbody.h"
+#include "SPHbody.h"
 #include <stdio.h>
 #include "SDF.h"
 #include "SDFread.h"
@@ -24,7 +24,7 @@ int conf;
 //float He4,C12,O16,Ne20,Mg24,Si28,S32;
 //float Ar36,Ca40,Ti44,Cr48,Fe52,Ni56;
 float tpos;
-double x,y,z,rho,pr,temp,u,vsound;
+double x,y,z,rho,pr,temp,u,vsound,maxtemp;
 double dist_in_cm;
 double mass_in_g;
 double dens_in_gccm;
@@ -35,7 +35,8 @@ double pressure_in_ergperccm;
 char sdffile[80];
 char number[9];
 char period[1];
-int i,j,start,end,inc;
+int i,j,k,start,end,inc;
+double iso[13],mass;
 
 int main(int argc, char **argv[])
 {
@@ -48,15 +49,11 @@ int main(int argc, char **argv[])
     specenergy_in_ergperg	= energy_in_erg/mass_in_g;
     pressure_in_ergperccm	= energy_in_erg/dist_in_cm/dist_in_cm/dist_in_cm;
 	
+	maxtemp = 0;
 	
 	if (argc < 2){
 		printf("on root: ");
 		gets (argv[1]);
-	}
-	
-	if (argc < 3){
-		printf("Id: ");
-		scanf(argv[2]);
 	}
 	
 	strcpy(period,".");
@@ -66,12 +63,15 @@ int main(int argc, char **argv[])
 	FILE *stream, *fopen();
 	/* declare a stream and prototype fopen */ 
 	
-	stream = fopen("out.csv","w");	
+	stream = fopen("temps.csv","w");	
 	
-	fprintf(stream,"x,y,z,t,rho,Pr,T,u,cs,abar,zbar,He4,C12,O16,Ne20,Mg24,Si28,S32,Ar36,Ca40,Ti44,Cr48,Fe52,Ni56,h\n");
+	fprintf(stream,"t,temp\n");
 	
 	for(i=start;i<(end+1);i+=inc)
 	{
+		for(j=0;j<13;j++) iso[j]=0;
+		mass=0;
+		
 		strcpy(sdffile,argv[1]);
 		strcat(sdffile,period);
 		sprintf(number,"%04d",i);
@@ -108,61 +108,32 @@ int main(int argc, char **argv[])
 						"Cr48", offsetof(SPHbody, Cr48), &conf,
 						"Fe52", offsetof(SPHbody, Fe52), &conf,
 						"Ni56", offsetof(SPHbody, Ni56), &conf,
-						"vsound", offsetof(SPHbody, vsound), &conf,
-						"abar", offsetof(SPHbody, abar), &conf,
-						"zbar", offsetof(SPHbody, zbar), &conf,
-						"ax", offsetof(SPHbody, ax), &conf,
-						"ay", offsetof(SPHbody, ay), &conf,
-						"az", offsetof(SPHbody, az), &conf,
-						"lax", offsetof(SPHbody, lax), &conf,
-						"lay", offsetof(SPHbody, lay), &conf,
-						"laz", offsetof(SPHbody, laz), &conf,
-						"phi", offsetof(SPHbody, phi), &conf,
-						"sigma", offsetof(SPHbody, sigma), &conf,
-						"kappa", offsetof(SPHbody, kappa), &conf,
-						"nbrs", offsetof(SPHbody, nbrs), &conf,
-						"ident", offsetof(SPHbody, ident), &conf,
-						"windid", offsetof(SPHbody, windid), &conf,
-						//"useless", offsetof(SPHbody, useless), &conf,
 						NULL);
 		SDFgetfloatOrDefault(sdfp, "tpos",  &tpos, (float)0.0);
 		singlPrintf("%s has %d particles.\n", sdffile, gnobj);
 		SDFclose(sdfp);
 		
-		for(j=0;j < nobj; j++)
+		temp = 0;
+		for(k=0;k < nobj; k++)
 		{
-			if (body[j].ident == atoi(argv[2])) {	
-				x		= body[j].x * dist_in_cm;
-				y		= body[j].y * dist_in_cm;
-				z		= body[j].z * dist_in_cm;
-				rho		= body[j].rho * dens_in_gccm;
-				pr		= body[j].pr * pressure_in_ergperccm;
-				temp	= body[j].temp;
-				u		= body[j].u * energy_in_erg/mass_in_g;
-				vsound	= body[j].vsound * dist_in_cm;
-				
-				fprintf(stream,"%3.2e,%3.2e,%3.2e,%f,%3.2e,%3.2e,%3.2e,%3.2e,%3.2e,%f,%f",x,y,z,tpos,rho,pr,temp,u,vsound,body[j].abar,body[j].zbar);
-				fprintf(stream,",%f",body[j].He4);
-				fprintf(stream,",%f",body[j].C12);
-				fprintf(stream,",%f",body[j].O16);
-				fprintf(stream,",%f",body[j].Ne20);
-				fprintf(stream,",%f",body[j].Mg24);
-				fprintf(stream,",%f",body[j].Si28);
-				fprintf(stream,",%f",body[j].S32);
-				fprintf(stream,",%f",body[j].Ar36);
-				fprintf(stream,",%f",body[j].Ca40);
-				fprintf(stream,",%f",body[j].Ti44);
-				fprintf(stream,",%f",body[j].Cr48);
-				fprintf(stream,",%f",body[j].Fe52);
-				fprintf(stream,",%f",body[j].Ni56);
-				fprintf(stream,",%3.2e\n",body[j].h*dist_in_cm);
-			}
+			if(body[k].temp > temp) temp = body[k].temp;
 		}
-		Free(body);
-	}
 		
+		fprintf(stream,"%f",tpos);
+		
+		fprintf(stream,",%3.2e",temp);
+		fprintf(stream,"\n");
+		
+		printf("%3.2f : %3.2f : %3.2e\n",(double)i/(double)end * 100.0,tpos,temp);
+		
+		Free(body);
+		
+		if(temp>maxtemp) maxtemp = temp;
+	}
+	
 	//close the stream file
 	fclose(stream);
 	
+	printf("Max Temp: %3.2e\n",maxtemp);
 	return 0;
 }

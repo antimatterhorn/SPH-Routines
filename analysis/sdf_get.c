@@ -7,7 +7,7 @@
  *
  */
 
-#include "SPHbody.h"
+#include "../SPHbody.h"
 #include <stdio.h>
 #include "SDF.h"
 #include "SDFread.h"
@@ -68,12 +68,7 @@ int main(int argc, char **argv[])
 					"lax", offsetof(SPHbody, lax), &conf,
 					"lay", offsetof(SPHbody, lay), &conf,
 					"laz", offsetof(SPHbody, laz), &conf,
-					"gax", offsetof(SPHbody, gax), &conf,
-					"gay", offsetof(SPHbody, gay), &conf,
-					"gaz", offsetof(SPHbody, gaz), &conf,
-					"grav_mass", offsetof(SPHbody, grav_mass), &conf,
 					"phi", offsetof(SPHbody, phi), &conf,
-					"tacc", offsetof(SPHbody, tacc), &conf,
 					"idt", offsetof(SPHbody, idt), &conf,
 					"sigma", offsetof(SPHbody, sigma), &conf,
 					"kappa", offsetof(SPHbody, kappa), &conf,
@@ -91,8 +86,8 @@ int main(int argc, char **argv[])
 	for(p = body; p < body+gnobj; p++)
 	{
 		//singlPrintf("%d / %d\n",i,gnobj-1);
-		if(fabs(p->y) < p->h && fabs(p->z) < p->h && fabs(p->x) < 3.5) {
-			printf("Particle %d\t T=%3.2eK x=%3.3f sig=%3.2e\n",p->ident,p->temp,p->x,p->sigma);
+		if(p->Ca40>0.2) {
+			printf("Particle %d\t T=%3.2eK {%3.2f %3.2f %3.2f %3.2f %3.2f %3.2f %3.2f}\n",p->ident,p->temp,p->He4,p->C12,p->O16,p->Si28,p->Ca40,p->Ti44,p->Ni56);
 			
 		}
 	}
