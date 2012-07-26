@@ -33,7 +33,7 @@ double specenergy_in_ergperg;
 double pressure_in_ergperccm;
 double mass_in_msol;
 double maxmass;
-double mass,tmass,r,rr,rmax,rmin,e1,e2,e3,x,y,z,xp,yp,zp,m,b,rho,energy;
+double mass,tmass,r,rr,rmax,rmin,e1,e2,e3,x,y,z,xp,yp,zp,m,b,rho,energy,rhomin;
 int nexp;
 double mni,mcore;
 
@@ -78,7 +78,7 @@ int usage()
 {
 	printf("\t Instantly burns a star to a predetermined composition and deposits that energy back to the particles. \n");
 	printf("\t Usage: [required] {optional}\n");
-	printf("\t sdf_postexp [sdf file]\n");
+	printf("\t sdf_postexp [sdf file] {min rho (g/cc)}\n");
 	return 0;
 }
 
@@ -161,6 +161,12 @@ int main(int argc, char **argv[])
 		usage();
 		return 0;
 	}
+	
+	if(argc < 3)
+		rhomin = 5.0e4;
+	else
+		rhomin = atof(argv[2]);
+
 	
 	int i,j,k,id;    
 
@@ -274,7 +280,7 @@ int main(int argc, char **argv[])
         energy = 0;
         
         rho = body[i].rho*dens_in_gccm;
-        if(rho > 1.e6)
+        if(rho > rhomin)
         {
             burn(rho);
             
@@ -322,7 +328,11 @@ int main(int argc, char **argv[])
             body[i].Ni56 = abundout[12];
 			k++;
         }
-        
+        else
+        {
+            body[i].C12     = 0.55;
+            body[i].O16     = 0.45;
+        }
 
     }
 

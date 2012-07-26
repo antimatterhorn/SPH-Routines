@@ -1,3 +1,1 @@
-! implicit declarations
-      implicit none
-      save
+../../../helmholtzEOS/implno.dek

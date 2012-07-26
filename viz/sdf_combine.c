@@ -108,7 +108,7 @@ int main(int argc, char **argv[])
 	system(cmd);
 	
 	//	create the 2d density plot
-	snprintf(cmd,sizeof(cmd),"sdf_2grid %s 1 1000 14.38 1e7",argv[1]);
+	snprintf(cmd,sizeof(cmd),"sdf_gridp %s 1 1000 14.38 1e7",argv[1]);
 	system(cmd);
 	
 	//	create the rho-T plots
@@ -121,12 +121,10 @@ int main(int argc, char **argv[])
 	
 	//	create the combined plot file
 	snprintf(vszfile, sizeof(vszfile), "%s_comb.vsz", argv[1]);
-	char *cwd = getcwd(NULL, 0);
 	
 	FILE *fopen(), *vsz;
 	vsz = fopen(vszfile,"w");
-	
-	fprintf(vsz,"AddImportPath('%s')\n",cwd);
+
 //	fprintf(vsz,"ImportFileCSV(u'%s_rhoT.csv', linked=True)\n",argv[1]);
 //	fprintf(vsz,"ImportFileCSV(u'%s_cs.csv', linked=True, dsprefix=u'cs_')\n",argv[1]);
 //	fprintf(vsz,"ImportFileCSV(u'%s_rhoT2.csv', linked=True, dsprefix=u'2_')\n",argv[1]);

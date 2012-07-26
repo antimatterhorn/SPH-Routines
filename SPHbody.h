@@ -28,6 +28,16 @@
 	unsigned int useless;	/* to fill double block */\n\
 }"
 
+#define DARKOUTBODYDESC \
+"struct {\n\
+    float mass;             /* mass */\n\
+    float x, y, z;          /* position of body */\n\
+    float vx, vy, vz;       /* velocity of body */\n\
+    float lx, ly, lz;       /* last acceleration of body */\n\
+    float accmass;          /* accreted mass */\n\
+    unsigned int ident;     /* unique identifier */\n\
+}"
+
 typedef struct {
 	double x, y, z;             /* position of body */							//3
 	float mass;           /* mass of body */
@@ -59,6 +69,15 @@ typedef struct {
 	unsigned int windid;   /* wind id */
 	unsigned int useless;  /* to fill the double block (4int=1double)*/		
 } SPHbody;
+
+typedef struct {
+	float mass;
+    float x, y, z;             /* position of body */							
+	float vx, vy, vz;    /* velocity of body */													
+	float lx, ly, lz;  /* last acceleration of body */						
+    float accmass;      /* accreted mass */
+	unsigned int ident;    /* unique identifier */	
+} Darkbody;
 
 
 const double pi = 3.1415926;

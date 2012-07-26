@@ -545,7 +545,7 @@ int main(int argc, char **argv[])
 
      fprintf(stream,"** %s **\n",asciifile);
      fprintf(stream,"box size:\t %d x %d\n",bj,bi);
-     fprintf(stream,"dimensions:\t %3.2ecm x %3.2ecm\n",xmax,xmax*2.0);
+     fprintf(stream,"dimensions:\t %3.2ecm x %3.2ecm\n",xmax*dist_in_cm,xmax*2.0*dist_in_cm);
      fprintf(stream,"t-pos:\t %3.2f\n",tpos);
      fprintf(stream,"**************************\n");
      fprintf(stream,"\n");
