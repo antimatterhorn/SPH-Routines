@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 
-/* This code will cut out a subsection of particles in a specified sphere	*/
+/* This code will cut out a subsection of particles in a specified box	*/
 
 #define SPHOUTBODYDESC \
 "struct {\n\
@@ -93,17 +93,17 @@ char outfile[80];
 
 int usage()
 {
-	printf("\t Cuts out a subsample of particles in a specified sphere (rbox)\n");
+	printf("\t Cuts out a subsample of particles in a specified box (xbox)\n");
 	printf("\t Usage: [required] {optional}\n");
-	//printf("\t sdf_composition [sdf file] [x1] [x2] [y1] [y2] [z1] [z2]\n");
-	printf("\t sdf_composition [sdf file] [rbox]\n");
+	printf("\t sdf_composition [sdf file] [x1] [x2] [y1] [y2] [z1] [z2]\n");
+	//printf("\t sdf_composition [sdf file] [xbox]\n");
 	return 0;
 }
 
 int inbox()
 {
-	//if(x<x2 && x>x1 && y<y2 && y>y1 && z<z2 && z>z1) return 1;
-	if(sqrt(x*x+y*y+z*z)<rbox) return 1;
+	if(x<x2 && x>x1 && y<y2 && y>y1 && z<z2 && z>z1) return 1;
+	//if(fabs(x)<rbox && fabs(y)<rbox && fabs(z)<rbox) return 1;
 	else return 0;
 }
 
@@ -115,16 +115,16 @@ int main(int argc, char **argv[])
 		return 0;
 	}
 	
-	rbox = atof(argv[2]);
+	//rbox = atof(argv[2]);
 	
-	/*
+	
 	x1 = atoi(argv[2]);
 	x2 = atoi(argv[3]);
 	y1 = atoi(argv[4]);
 	y2 = atoi(argv[5]);
 	z1 = atoi(argv[6]);
 	z2 = atoi(argv[7]);
-	 */
+    
 	
 	SDF *sdfp;
 	SPHbody *body1;

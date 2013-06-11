@@ -3,7 +3,7 @@ TAR=.
 SPHDIR=/Users/cody/sph/tree16
 ARCH=i686-darwin
 cc=gcc -m64 -I$(SPHDIR)/include \
-	-L$(SPHDIR)/Objfiles/$(ARCH) -lsw
+	-L$(SPHDIR)/Objfiles/$(ARCH) -lsw -g
 
 
 single : sdf_$(FILE).c

@@ -11,25 +11,13 @@
 "struct {\n\
 	double x, y, z;		/* position of body */\n\
 	float mass;			/* mass of body */\n\
-	float vx, vy, vz;	/* velocity of body */\n\
-	float u;			/* specific energy of body*/\n\
 	float h;			/* smoothing length of body */\n\
-	float rho;			/* density of body */\n\
-	float pr;			/* pressure of body */\n\
-	float temp;			/* temperature of body */\n\
-	unsigned int ident; /* particle id */\n\
 }"
 
 typedef struct {
 	double x, y, z;             /* position of body */
 	float mass;           /* mass of body */
-	float vx, vy, vz;     /* velocity of body */
-	float u;              /* specific energy of body*/
 	float h;              /* smoothing length of body */
-	float rho;            /* density of body */
-	float pr;            /* pressure of body */
-	float temp;           /* temperature of body */
-	unsigned int ident;
 } SDFgrid;
 
 int main()
@@ -58,7 +46,7 @@ int main()
 	gets (name);
 	printf("gridpoints on a side: ");
 	scanf("%d",&npts);
-	printf("gridsize (Rsun): ");
+	printf("gridsize: ");
 	scanf("%lf",&gridsize);	
 
 	dgrid = gridsize*2 / npts;	
@@ -71,13 +59,11 @@ int main()
 		for(j=0;j<npts;j++){
 			for(k=0;k<npts;k++){
 				p = i*npts*npts + j*npts + k;
-				outArray[p].x		= -gridsize + dgrid*i;
-				outArray[p].y		= -gridsize + dgrid*j;
-				outArray[p].z		= -gridsize + dgrid*k;
-				outArray[p].h		= gridsize*0.1;
+				outArray[p].x		= -gridsize + dgrid*i + dgrid/2;
+				outArray[p].y		= -gridsize + dgrid*j + dgrid/2;
+				outArray[p].z		= -gridsize + dgrid*k + dgrid/2;
+				outArray[p].h		= 3.0*dgrid;
 				outArray[p].mass	= 1.0;
-				outArray[p].rho		= 1.0;
-				outArray[p].ident	= p;
 			}
 		}
 	}

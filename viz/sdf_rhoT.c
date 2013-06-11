@@ -341,13 +341,13 @@ int main(int argc, char **argv[])
 	
 //-------------------stream vsz file--------------------------
 	
-	char *cwd = getcwd(NULL, 0);
+	//char *cwd = getcwd(NULL, 0);
 	snprintf(vszfile, sizeof(vszfile), "%s_rhoT.vsz", argv[1]);
 	snprintf(pdffile, sizeof(pdffile), "%s_rhoT.png", argv[1]);
 	
 	vsz = fopen(vszfile,"w");
 
-	fprintf(vsz,"AddImportPath(u'%s')\n",cwd);
+	//fprintf(vsz,"AddImportPath(u'%s')\n",cwd);
 	fprintf(vsz,"ImportFile2D(u'%s', [u'rhoT1'], invertrows=True, invertcols=False, transpose=False, encoding='utf_8', linked=True)\n",csv1file);
 	fprintf(vsz,"ImportFile2D(u'%s', [u'co1'], invertrows=True, invertcols=False, transpose=False, encoding='utf_8', linked=True)\n",co1file);
 	fprintf(vsz,"ImportFile2D(u'%s', [u'ni1'], invertrows=True, invertcols=False, transpose=False, encoding='utf_8', linked=True)\n",ni1file);
@@ -407,6 +407,12 @@ int main(int argc, char **argv[])
 	fprintf(vsz,"Set('Label/size', u'18pt')\n");
 	fprintf(vsz,"Set('TickLabels/size', u'16pt')\n");
 	fprintf(vsz,"To('..')\n");
+    fprintf(vsz,"Add('label', name='label1', autoadd=False)\n");
+    fprintf(vsz,"To('label1')\n");
+    fprintf(vsz,"Set('label', u'%3.2f')\n",tpos);
+    fprintf(vsz,"Set('xPos', [0.5155758712508223])\n");
+    fprintf(vsz,"Set('yPos', [0.07556142227156612])\n");
+    fprintf(vsz,"To('..')\n");
 	fprintf(vsz,"Add('image', name=u'Ni1', autoadd=False)\n");
 	fprintf(vsz,"To(u'Ni1')\n");
 	fprintf(vsz,"Set('data', u'rhoT1')\n");

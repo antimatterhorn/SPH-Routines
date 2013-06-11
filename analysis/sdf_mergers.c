@@ -79,7 +79,7 @@ int main(int argc, char **argv[])
 	system(cmd);
 	
 	//	create the 2d temperature plot
-	snprintf(cmd,sizeof(cmd),"sdf_2grid %s 2 1000 25 1e7",argv[1]);
+	snprintf(cmd,sizeof(cmd),"sdf_gridp %s 1 1000 25 1e7 1e7",argv[1]);
 	system(cmd);
 	
 	//	remove the individual plot files

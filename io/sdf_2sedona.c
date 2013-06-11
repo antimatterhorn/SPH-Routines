@@ -18,13 +18,17 @@
 #include <math.h>
 #include <omp.h>
 
+#define MIN(a, b) ((a < b) ? a : b)
+#define MAX(a, b) ((a > b) ? a : b)
+
 int gnobj, nobj;
 int conf;
-double xmax,ymax,dist,x,z;
+double xmax,ymax,dist,x,z,dx;
 double time;
 float tpos,norm;
 int choice,pixels,threads;
 int i,j,k;
+int bin;
 char sdffile[80];
 char asciifile[80];
 
@@ -110,10 +114,15 @@ int main(int argc, char **argv[])
 		usage();
 		return 0;
 	}else {
-		pixels = 256;
+		pixels = 128;
 		xmax = atof(argv[2]);
 	}
-    
+	
+	if(argc > 3)
+	{
+		bin = 1;
+		pixels = 2048;
+	}
 		
 	sdfp = SDFreadf(argv[1], (void **)&body, &gnobj, &nobj, sizeof(SPHbody),
 					"x", offsetof(SPHbody, x), &conf,
@@ -167,8 +176,9 @@ int main(int argc, char **argv[])
 	
 	singlPrintf("%s has %d particles.\n", argv[1], gnobj);
 	
-	ymax = xmax;
-    dist = xmax*dist_in_cm;
+	ymax	= xmax;
+	dx		= 2.0*xmax/(double)pixels;
+    dist	= xmax*dist_in_cm;
 	
 //	double **dens;
 //	
@@ -184,6 +194,7 @@ int main(int argc, char **argv[])
 	double **imgtemp, **(my_imgtemp[threads]);
 	double **imgvx, **(my_imgvx[threads]);
 	double **imgvy, **(my_imgvy[threads]);
+	double **imgva, **(my_imgva[threads]);
 	double **imgHe4, **(my_imgHe4[threads]);
 	double **imgC12, **(my_imgC12[threads]);
 	double **imgO16, **(my_imgO16[threads]);
@@ -202,6 +213,7 @@ int main(int argc, char **argv[])
 	imgtemp = (double **) malloc(pixels*sizeof(double *));
 	imgvx = (double **) malloc(pixels*sizeof(double *));
 	imgvy = (double **) malloc(pixels*sizeof(double *));
+	imgva = (double **) malloc(pixels*sizeof(double *));
 	imgHe4 = (double **) malloc(pixels*sizeof(double *));
 	imgC12 = (double **) malloc(pixels*sizeof(double *));
 	imgO16 = (double **) malloc(pixels*sizeof(double *));
@@ -220,6 +232,7 @@ int main(int argc, char **argv[])
 		imgtemp[i] = (double *) malloc(pixels*sizeof(double));
 		imgvx[i] = (double *) malloc(pixels*sizeof(double));
 		imgvy[i] = (double *) malloc(pixels*sizeof(double));
+		imgva[i] = (double *) malloc(pixels*sizeof(double));
 		imgHe4[i] = (double *) malloc(pixels*sizeof(double));
 		imgC12[i] = (double *) malloc(pixels*sizeof(double));
 		imgO16[i] = (double *) malloc(pixels*sizeof(double));
@@ -239,6 +252,7 @@ int main(int argc, char **argv[])
 			imgtemp[i][j] = 0.0;
 			imgvx[i][j] = 0.0;
 			imgvy[i][j] = 0.0;
+			imgva[i][j] = 0.0;
 			imgHe4[i][j] = 0.0;
 			imgC12[i][j] = 0.0;
 			imgO16[i][j] = 0.0;
@@ -259,11 +273,12 @@ int main(int argc, char **argv[])
 	time = omp_get_wtime();
 	
 #pragma omp parallel private(k,i,j) \
-	shared(pixels,xmax,ymax,body,choice,nobj,dens_in_gccm,threads) default(none)\
+	shared(pixels,xmax,ymax,body,choice,nobj,dens_in_gccm,threads,bin,dx) default(none)\
     shared(my_imgrho) \
     shared(my_imgtemp) \
     shared(my_imgvx) \
     shared(my_imgvy) \
+	shared(my_imgva) \
     shared(my_imgHe4) \
     shared(my_imgC12) \
     shared(my_imgO16) \
@@ -283,6 +298,7 @@ int main(int argc, char **argv[])
 		my_imgtemp[idx] = (double **) malloc(pixels*sizeof(double *));
 		my_imgvx[idx] = (double **) malloc(pixels*sizeof(double *));
 		my_imgvy[idx] = (double **) malloc(pixels*sizeof(double *));
+		my_imgva[idx] = (double **) malloc(pixels*sizeof(double *));
 		my_imgHe4[idx] = (double **) malloc(pixels*sizeof(double *));
 		my_imgC12[idx] = (double **) malloc(pixels*sizeof(double *));
 		my_imgO16[idx] = (double **) malloc(pixels*sizeof(double *));
@@ -302,6 +318,7 @@ int main(int argc, char **argv[])
 			my_imgtemp[idx][i] = (double *) malloc(pixels*sizeof(double));
 			my_imgvx[idx][i] = (double *) malloc(pixels*sizeof(double));
 			my_imgvy[idx][i] = (double *) malloc(pixels*sizeof(double));
+			my_imgva[idx][i] = (double *) malloc(pixels*sizeof(double));
 			my_imgHe4[idx][i] = (double *) malloc(pixels*sizeof(double));
 			my_imgC12[idx][i] = (double *) malloc(pixels*sizeof(double));
 			my_imgO16[idx][i] = (double *) malloc(pixels*sizeof(double));
@@ -321,6 +338,7 @@ int main(int argc, char **argv[])
 				my_imgtemp[idx][i][j] = 0.0;
 				my_imgvx[idx][i][j] = 0.0;
 				my_imgvy[idx][i][j] = 0.0;
+				my_imgva[idx][i][j] = 0.0;
 				my_imgHe4[idx][i][j] = 0.0;
 				my_imgC12[idx][i][j] = 0.0;
 				my_imgO16[idx][i][j] = 0.0;
@@ -337,14 +355,19 @@ int main(int argc, char **argv[])
 			}
 		}
 		
-		double x,y,z,h,rho,temp,mass,kern,r,xc,yc;
+		double x,y,z,h,rho,temp,mass,kern,r,xc,yc,maxprog=0;
 		int hc,ic,jc;
 		for(k=(double)idx/(double)threads*nobj;k<(double)(idx+1)/(double)threads*nobj;k++)
 		{
-
+            if(maxprog < floor(MAX(maxprog,100*(double)k/((double)(idx+1)/(double)threads*nobj))))
+            {
+                maxprog = floor(MAX(maxprog,100*(double)k/((double)(idx+1)/(double)threads*nobj)));
+                printf("%d %3.2f\n",omp_get_thread_num(),maxprog);
+            }
+            
 			if (fabs(body[k].y) < 2.0*body[k].h) /* x-z midplane */
 			{
-				x = body[k].x;
+				x = ((bin == 1) ? body[k].x - dx/2.0 : body[k].x);
 				y = body[k].z;
 				z = body[k].y;
 				h = body[k].h;
@@ -353,7 +376,8 @@ int main(int argc, char **argv[])
 				ic = x*(pixels/(2.0*xmax)) + pixels/2.0;
 				jc = -y*(pixels/(2.0*ymax)) + pixels/2.0; //this is actually z now remember
 				
-				if((abs(ic)-hc) <= pixels || (abs(jc)-hc) <= pixels)
+				//if((abs(ic)-hc) <= pixels || (abs(jc)-hc) <= pixels)
+                if(abs(x)-h <= xmax || abs(y) - h <= ymax)
 				{
 					rho = body[k].rho;
 					temp = body[k].temp;
@@ -365,6 +389,7 @@ int main(int argc, char **argv[])
 						my_imgtemp[idx][ic][jc] += mass*kern*dens_in_gccm*body[k].temp;
 						my_imgvx[idx][ic][jc] += mass*kern*dens_in_gccm*body[k].vx;
 						my_imgvy[idx][ic][jc] += mass*kern*dens_in_gccm*body[k].vz;
+						my_imgva[idx][ic][jc] += mass*kern*dens_in_gccm*body[k].vy;
 						my_imgHe4[idx][ic][jc] += mass*kern*dens_in_gccm*body[k].He4;
 						my_imgC12[idx][ic][jc] += mass*kern*dens_in_gccm*body[k].C12;
 						my_imgO16[idx][ic][jc] += mass*kern*dens_in_gccm*body[k].O16;
@@ -393,6 +418,7 @@ int main(int argc, char **argv[])
 									my_imgtemp[idx][i][j] += mass*kern*dens_in_gccm*body[k].temp;
                                     my_imgvx[idx][i][j] += mass*kern*dens_in_gccm*body[k].vx;
                                     my_imgvy[idx][i][j] += mass*kern*dens_in_gccm*body[k].vz;
+									my_imgva[idx][i][j] += mass*kern*dens_in_gccm*body[k].vy;
                                     my_imgHe4[idx][i][j] += mass*kern*dens_in_gccm*body[k].He4;
                                     my_imgC12[idx][i][j] += mass*kern*dens_in_gccm*body[k].C12;
                                     my_imgO16[idx][i][j] += mass*kern*dens_in_gccm*body[k].O16;
@@ -432,6 +458,7 @@ int main(int argc, char **argv[])
                 imgtemp[i][j] += my_imgtemp[idx][i][j];
                 imgvx[i][j] += my_imgvx[idx][i][j];
                 imgvy[i][j] += my_imgvy[idx][i][j];
+				imgva[i][j] += my_imgva[idx][i][j];
                 imgHe4[i][j] += my_imgHe4[idx][i][j];
                 imgC12[i][j] += my_imgC12[idx][i][j];
                 imgO16[i][j] += my_imgO16[idx][i][j];
@@ -457,6 +484,7 @@ int main(int argc, char **argv[])
 			imgtemp[i][j] = ((imgrho[i][j]>0.0) ? imgtemp[i][j]/imgrho[i][j] : 0.0);
             imgvx[i][j] = ((imgrho[i][j]>0.0) ? imgvx[i][j]/imgrho[i][j] : 0.0);
             imgvy[i][j] = ((imgrho[i][j]>0.0) ? imgvy[i][j]/imgrho[i][j] : 0.0);
+			imgva[i][j] = ((imgrho[i][j]>0.0) ? imgva[i][j]/imgrho[i][j] : 0.0);
             imgHe4[i][j] = ((imgrho[i][j]>0.0) ? imgHe4[i][j]/imgrho[i][j] : 0.0);
             imgC12[i][j] = ((imgrho[i][j]>0.0) ? imgC12[i][j]/imgrho[i][j] : 0.0);
             imgO16[i][j] = ((imgrho[i][j]>0.0) ? imgO16[i][j]/imgrho[i][j] : 0.0);
@@ -517,6 +545,7 @@ int main(int argc, char **argv[])
         free(my_imgtemp[idx]);
         free(my_imgvx[idx]);
         free(my_imgvy[idx]);
+		free(my_imgva[idx]);
         free(my_imgHe4[idx]);
         free(my_imgC12[idx]);
         free(my_imgO16[idx]);
@@ -544,13 +573,13 @@ int main(int argc, char **argv[])
 	stream = fopen(asciifile,"w");
 
      fprintf(stream,"** %s **\n",asciifile);
-     fprintf(stream,"box size:\t %d x %d\n",bj,bi);
+     fprintf(stream,"box size:\t %d x %d\n",pixels/2,pixels);
      fprintf(stream,"dimensions:\t %3.2ecm x %3.2ecm\n",xmax*dist_in_cm,xmax*2.0*dist_in_cm);
      fprintf(stream,"t-pos:\t %3.2f\n",tpos);
      fprintf(stream,"**************************\n");
      fprintf(stream,"\n");
 
-	fprintf(stream,"x(cm) z(cm) rho(g/cc) vx(cm/s) vz(cm/s) T(K) He4 C12 O16 Ne20 Mg24 Si28 S32 Ar36 Ca40 Ti44 Cr48 Fe52 Ni56\n");
+	fprintf(stream,"r(cm) z(cm) rho(g/cc) vr(cm/s) vz(cm/s) va(cm/s) T(K) He4 C12 O16 Ne20 Mg24 Si28 S32 Ar36 Ca40 Ti44 Cr48 Fe52 Ni56\n");
 
     for(i=0;i<pixels;i++)
 	{
@@ -560,11 +589,13 @@ int main(int argc, char **argv[])
             x = (double)i/(double)pixels*2.0*xmax-xmax;
             z = ymax - (double)j/(double)pixels*2.0*ymax;
             
+			if(bin == 1) x+=dx/2.0;
+			
             if(x>=0.0)
             {
                 fprintf(stream,"%03.5e %03.5e ",x*dist_in_cm,z*dist_in_cm);
                 fprintf(stream,"%03.2e ",((imgrho[i][j]>1e-12) ? imgrho[i][j] : 1e-12));
-                fprintf(stream,"%03.2e %03.2e ",imgvx[i][j]*dist_in_cm,imgvy[i][j]*dist_in_cm);
+                fprintf(stream,"%03.2e %03.2e %03.2e ",imgvx[i][j]*dist_in_cm,imgvy[i][j]*dist_in_cm,imgva[i][j]*dist_in_cm);
                 fprintf(stream,"%03.2e ",imgtemp[i][j]);
                 fprintf(stream,"%1.5f ",imgHe4[i][j]);
                 fprintf(stream,"%1.5f ",imgC12[i][j]);
@@ -595,6 +626,7 @@ int main(int argc, char **argv[])
     free(imgtemp);
     free(imgvx);
     free(imgvy);
+	free(imgva);
     free(imgHe4);
     free(imgC12);
     free(imgO16);

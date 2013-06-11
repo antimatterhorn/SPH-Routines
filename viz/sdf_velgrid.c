@@ -171,7 +171,7 @@ int main(int argc, char **argv[])
 	time = omp_get_wtime();
 	
 #pragma omp parallel private(k,i,j) \
-	shared(pixels,xmax,ymax,body,choice,my_img,nobj,dens_in_gccm,threads) default(none)
+	shared(pixels,xmax,ymax,body,choice,my_img,nobj,dens_in_gccm,threads,dist_in_cm) default(none)
 	{
 		int idx = omp_get_thread_num();
 		my_img[idx] = (double **) malloc(pixels*sizeof(double *));
@@ -204,7 +204,7 @@ int main(int argc, char **argv[])
 				if(hc<1){ /* particle is smaller than a pixel, fill pixel instead */
 					kern = w(h,0);
 
-							my_img[idx][ic][jc] += mass/rho*kern*(body[k].vx*x+body[k].vy*y)/sqrt(x*x+y*y);
+							my_img[idx][ic][jc] += mass/rho*kern*body[k].vx*dist_in_cm;
 
 					
 				}else{
@@ -220,7 +220,7 @@ int main(int argc, char **argv[])
 								r = sqrt(pow(xc-x,2.0)+pow(yc-y,2.0)+z*z);
 								kern = w(h,r);
 
-										my_img[idx][i][j] += mass/rho*kern*(body[k].vx*x+body[k].vy*y)/sqrt(x*x+y*y);
+										my_img[idx][i][j] += mass/rho*kern*body[k].vx*dist_in_cm;
 
 							}
 							
@@ -250,15 +250,10 @@ int main(int argc, char **argv[])
 	time = omp_get_wtime() - time;	
 	printf("%3.2fs\nwriting the files...\t",time);
 	time = omp_get_wtime();
-	
-	switch (choice){
-		case 1:
-			snprintf(csvfile, sizeof(csvfile), "%s_rho.csv", argv[1]);
-			break;
-		case 2:
-			snprintf(csvfile, sizeof(csvfile), "%s_temp.csv", argv[1]);
-			break;
-	}
+
+			snprintf(csvfile, sizeof(csvfile), "%s_vel.csv", argv[1]);
+
+
 	
 #pragma omp parallel num_threads(2) \
 	default(none) shared(img,choice,csvfile,vszfile,pdffile,argv,pixels,tpos,maxrho) \
@@ -289,7 +284,7 @@ int main(int argc, char **argv[])
 			{
 				
 				FILE *fopen(), *vsz;
-				char *cwd = getcwd(NULL, 0);
+				
 				
 
 						snprintf(vszfile, sizeof(vszfile), "%s_vel.vsz", argv[1]);
@@ -297,7 +292,7 @@ int main(int argc, char **argv[])
 						
 						vsz = fopen(vszfile,"w");
 						
-						fprintf(vsz,"ImportFile2D(u'%s/%s', [u'ds'], invertrows=False, invertcols=False,transpose=True, linked=True)\n",cwd,csvfile);
+						fprintf(vsz,"ImportFile2D(u'%s', [u'ds'], invertrows=False, invertcols=False,transpose=True, linked=True)\n",csvfile);
 						fprintf(vsz,"Add('page', name='page1', autoadd=False)\n");
 						fprintf(vsz,"To('page1')\n");
 						fprintf(vsz,"Add('graph', name='graph1', autoadd=False)\n");

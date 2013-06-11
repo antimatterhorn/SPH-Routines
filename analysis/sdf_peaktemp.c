@@ -7,7 +7,7 @@
  *
  */
 
-#include "SPHbody.h"
+#include "../SPHbody.h"
 #include <stdio.h>
 #include "SDF.h"
 #include "SDFread.h"

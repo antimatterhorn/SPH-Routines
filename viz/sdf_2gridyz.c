@@ -43,7 +43,7 @@ int open;
 
 int usage()
 {
-	printf("\t Creates an interpolation plot of paticles on the x-y plane.\n");
+	printf("\t Creates an interpolation plot of paticles on the y-z plane.\n");
 	printf("\t Usage: [required] {optional}\n");
 	printf("\t sdf_2grid [sdf file] [rho=1,temp=2] [pixels] [xmax(code units)] [rhomax(cgs)]\n");
 	return 0;

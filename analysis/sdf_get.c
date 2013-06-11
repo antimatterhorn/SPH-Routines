@@ -86,7 +86,7 @@ int main(int argc, char **argv[])
 	for(p = body; p < body+gnobj; p++)
 	{
 		//singlPrintf("%d / %d\n",i,gnobj-1);
-		if(p->Ca40>0.2) {
+		if(p->temp>2e9) {
 			printf("Particle %d\t T=%3.2eK {%3.2f %3.2f %3.2f %3.2f %3.2f %3.2f %3.2f}\n",p->ident,p->temp,p->He4,p->C12,p->O16,p->Si28,p->Ca40,p->Ti44,p->Ni56);
 			
 		}
